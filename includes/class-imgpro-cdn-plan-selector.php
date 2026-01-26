@@ -83,7 +83,7 @@ class ImgPro_CDN_Plan_Selector {
 
             <?php if (!$is_paid): ?>
             <div class="imgpro-plan-selector__footer">
-                <button type="button" class="imgpro-btn imgpro-btn-primary imgpro-btn-lg imgpro-btn-full" id="imgpro-plan-checkout" data-tier-id="unlimited">
+                <button type="button" class="imgpro-btn imgpro-btn-primary imgpro-btn-lg imgpro-btn-full" id="imgpro-plan-checkout" data-tier-id="image">
                     <span class="imgpro-btn-text"><?php esc_html_e('Activate Subscription', 'bandwidth-saver'); ?></span>
                     <span class="imgpro-btn-loading">
                         <svg class="imgpro-spinner" width="20" height="20" viewBox="0 0 20 20">
@@ -113,17 +113,17 @@ class ImgPro_CDN_Plan_Selector {
     private function render_subscription_card() {
         ?>
         <div class="imgpro-plan-card imgpro-plan-card--single"
-             data-tier-id="unlimited"
+             data-tier-id="image"
              data-tier-name="Unlimited"
-             data-tier-price="$19.99/mo">
+             data-tier-price="$9.99/mo">
 
             <div class="imgpro-plan-card__header">
-                <h3 class="imgpro-plan-card__name"><?php esc_html_e('Media CDN', 'bandwidth-saver'); ?></h3>
+                <h3 class="imgpro-plan-card__name"><?php esc_html_e('Unlimited', 'bandwidth-saver'); ?></h3>
                 <p class="imgpro-plan-card__description"><?php esc_html_e('Support the service you\'re already using.', 'bandwidth-saver'); ?></p>
             </div>
 
             <div class="imgpro-plan-card__price">
-                <span class="imgpro-plan-card__amount">$19.99</span>
+                <span class="imgpro-plan-card__amount">$9.99</span>
                 <span class="imgpro-plan-card__period">/mo</span>
             </div>
 
@@ -138,7 +138,7 @@ class ImgPro_CDN_Plan_Selector {
                     <svg class="imgpro-plan-card__feature-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M13.333 4L6 11.333 2.667 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span><?php esc_html_e('Images, video, audio & HLS streaming', 'bandwidth-saver'); ?></span>
+                    <span><?php esc_html_e('All image formats (JPG, PNG, GIF, WebP, AVIF, SVG)', 'bandwidth-saver'); ?></span>
                 </li>
                 <li class="imgpro-plan-card__feature">
                     <svg class="imgpro-plan-card__feature-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -179,7 +179,7 @@ class ImgPro_CDN_Plan_Selector {
             </div>
             <h3 class="imgpro-plan-active__title"><?php esc_html_e('Subscription Active', 'bandwidth-saver'); ?></h3>
             <p class="imgpro-plan-active__description">
-                <?php esc_html_e('Thank you for supporting the Media CDN. Your subscription keeps the service running.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Thank you for supporting the Image CDN. Your subscription keeps the service running.', 'bandwidth-saver'); ?>
             </p>
             <button type="button" class="imgpro-btn imgpro-btn-secondary" id="imgpro-manage-subscription">
                 <?php esc_html_e('Manage Subscription', 'bandwidth-saver'); ?>

@@ -25,7 +25,7 @@ class ImgPro_CDN_API {
      *
      * @var string
      */
-    const BASE_URL = 'https://cloud.wp.img.pro';
+    const BASE_URL = 'https://billing.bandwidth-saver.com';
 
     /**
      * Cache TTL in seconds (1 hour) - for static data like tiers
@@ -335,10 +335,10 @@ class ImgPro_CDN_API {
      * Create Stripe checkout session for upgrade
      *
      * @param string $api_key Site API key.
-     * @param string $tier_id Target tier ID (default: 'unlimited').
+     * @param string $tier_id Target tier ID (default: 'image').
      * @return array|WP_Error Checkout data with URL or error.
      */
-    public function create_checkout($api_key, $tier_id = 'unlimited') {
+    public function create_checkout($api_key, $tier_id = 'image') {
         if (empty($api_key)) {
             return new WP_Error('missing_api_key', __('API key is required', 'bandwidth-saver'));
         }
@@ -837,8 +837,8 @@ class ImgPro_CDN_API {
         return [
             [
                 'id' => 'free',
-                'name' => 'Media CDN',
-                'description' => 'Media CDN Service',
+                'name' => 'Trial',
+                'description' => 'Try the Image CDN',
                 'highlight' => false,
                 'price' => ['cents' => 0, 'formatted' => 'Free', 'period' => null],
                 'limits' => [
@@ -846,20 +846,20 @@ class ImgPro_CDN_API {
                     'cache' => ['bytes' => null, 'formatted' => 'Unlimited', 'unlimited' => true],
                     'domains' => ['max' => null, 'unlimited' => true],
                 ],
-                'features' => ['custom_domain' => true, 'priority_support' => false, 'video_support' => true, 'audio_support' => true],
+                'features' => ['custom_domain' => true, 'priority_support' => false],
             ],
             [
-                'id' => 'unlimited',
-                'name' => 'Media CDN',
-                'description' => 'Media CDN Service',
+                'id' => 'image',
+                'name' => 'Unlimited',
+                'description' => 'Unlimited Image CDN',
                 'highlight' => true,
-                'price' => ['cents' => 1999, 'formatted' => '$19.99', 'period' => '/mo'],
+                'price' => ['cents' => 999, 'formatted' => '$9.99', 'period' => '/mo'],
                 'limits' => [
                     'bandwidth' => ['bytes' => null, 'formatted' => 'Unlimited', 'unlimited' => true],
                     'cache' => ['bytes' => null, 'formatted' => 'Unlimited', 'unlimited' => true],
                     'domains' => ['max' => null, 'unlimited' => true],
                 ],
-                'features' => ['custom_domain' => true, 'priority_support' => true, 'video_support' => true, 'audio_support' => true],
+                'features' => ['custom_domain' => true, 'priority_support' => true],
             ],
         ];
     }
@@ -881,13 +881,13 @@ class ImgPro_CDN_API {
 
         // Fallback defaults (Unlimited tier pricing)
         return [
-            'amount'    => 1999,
+            'amount'    => 999,
             'currency'  => 'USD',
             'interval'  => 'month',
             'formatted' => [
-                'amount' => '$19.99',
+                'amount' => '$9.99',
                 'period' => '/mo',
-                'full'   => '$19.99/mo',
+                'full'   => '$9.99/mo',
             ],
         ];
     }

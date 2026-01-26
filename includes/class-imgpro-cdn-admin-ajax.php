@@ -292,8 +292,8 @@ class ImgPro_CDN_Admin_Ajax {
         $current_enabled = ImgPro_CDN_Settings::is_mode_enabled($mode, $current_settings);
         if ($current_enabled === $enabled) {
             $message = $enabled
-                ? __('Media CDN is active. Media is loading from Cloudflare.', 'bandwidth-saver')
-                : __('Media CDN is disabled. Media is loading from your server.', 'bandwidth-saver');
+                ? __('Image CDN is active. Images are loading from Cloudflare.', 'bandwidth-saver')
+                : __('Image CDN is disabled. Images are loading from your server.', 'bandwidth-saver');
 
             wp_send_json_success(['message' => $message]);
             return;
@@ -312,8 +312,8 @@ class ImgPro_CDN_Admin_Ajax {
 
         if (false !== $result) {
             $message = $enabled
-                ? __('Media CDN enabled. Media now loads from the global network.', 'bandwidth-saver')
-                : __('Media CDN disabled. Media now loads from your server.', 'bandwidth-saver');
+                ? __('Image CDN enabled. Images now load from the global network.', 'bandwidth-saver')
+                : __('Image CDN disabled. Images now load from your server.', 'bandwidth-saver');
 
             $response = ['message' => $message];
 
@@ -599,9 +599,9 @@ class ImgPro_CDN_Admin_Ajax {
         ImgPro_CDN_Security::check_permission();
         ImgPro_CDN_Security::check_rate_limit('checkout');
 
-        // Always upgrade to unlimited tier (single paid tier model)
+        // Always upgrade to image tier (single paid tier model for Image CDN)
         // tier_id parameter kept for backwards compatibility but ignored
-        $tier_id = 'unlimited';
+        $tier_id = 'image';
 
         // SECURITY: Use get_api_key() to decrypt the stored API key
         $api_key = $this->settings->get_api_key();
@@ -778,7 +778,7 @@ class ImgPro_CDN_Admin_Ajax {
 
         // Enable CDN if valid subscription
         $current_tier_id = $this->api->get_tier_id($site);
-        if (in_array($current_tier_id, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
+        if (in_array($current_tier_id, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
             $this->settings->update([
                 'cloud_enabled' => true,
                 'onboarding_completed' => true,
@@ -796,6 +796,7 @@ class ImgPro_CDN_Admin_Ajax {
                 ImgPro_CDN_Settings::TIER_LITE      => 2,
                 ImgPro_CDN_Settings::TIER_PRO       => 3,
                 ImgPro_CDN_Settings::TIER_BUSINESS  => 4,
+                ImgPro_CDN_Settings::TIER_IMAGE     => 5,
                 ImgPro_CDN_Settings::TIER_UNLIMITED => 5,
             ];
 
@@ -1055,7 +1056,7 @@ class ImgPro_CDN_Admin_Ajax {
         ]);
 
         wp_send_json_success([
-            'message' => __('CDN domain removed. The Media CDN has been disabled.', 'bandwidth-saver')
+            'message' => __('CDN domain removed. The Image CDN has been disabled.', 'bandwidth-saver')
         ]);
     }
 
@@ -1116,6 +1117,7 @@ class ImgPro_CDN_Admin_Ajax {
             $tier = $settings['cloud_tier'] ?? '';
             $tier_valid = in_array($tier, [
                 ImgPro_CDN_Settings::TIER_FREE,
+                ImgPro_CDN_Settings::TIER_IMAGE,
                 ImgPro_CDN_Settings::TIER_UNLIMITED,
                 ImgPro_CDN_Settings::TIER_LITE,
                 ImgPro_CDN_Settings::TIER_PRO,
@@ -1417,7 +1419,7 @@ class ImgPro_CDN_Admin_Ajax {
             'source_urls' => $source_urls,
             'count' => $full_response['count'] ?? count($source_urls),
             'max_domains' => -1, // Unlimited for all users
-            'tier_name' => $full_response['tier_name'] ?? 'Media CDN'
+            'tier_name' => $full_response['tier_name'] ?? 'Unlimited'
         ]);
     }
 

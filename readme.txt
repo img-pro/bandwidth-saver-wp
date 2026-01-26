@@ -1,141 +1,143 @@
-=== Bandwidth Saver: Unlimited Media CDN ===
+=== Bandwidth Saver: Image CDN ===
 Contributors: imgpro
-Tags: media cdn, cdn, video cdn, image cdn, hls streaming
+Tags: image cdn, cdn, image optimization, core web vitals, page speed
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Unlimited media CDN for WordPress. Serve images, video, audio, and HLS streams from 300+ edge servers. $19.99/mo for unlimited bandwidth.
+Image CDN for WordPress. Serve images from 300+ global edge servers. Faster Core Web Vitals, better SEO. $9.99/mo.
 
 == Description ==
 
-**Unlimited media CDN that makes your WordPress site faster.**
+**Image CDN that makes your WordPress site faster.**
 
-Heavy media files slow down your site. When videos buffer and images lag, visitors leave, Core Web Vitals fail, and Google ranks you lower.
+Heavy images slow down your site. When images lag, visitors leave, Core Web Vitals fail, and Google ranks you lower.
 
-This media CDN plugin fixes that by serving your images, videos, audio, and HLS streams from 300+ global edge servers. A visitor in Tokyo loads media from Asia. A visitor in London loads from Europe. Everyone gets faster pages.
+This image CDN plugin fixes that by serving your images from 300+ global edge servers. A visitor in Tokyo loads images from Asia. A visitor in London loads from Europe. Everyone gets faster pages.
 
 **60-second setup.** No DNS changes. No external accounts. No settings to configure. Just activate and start delivering.
 
-= Why Use a Media CDN? =
+= Why Use an Image CDN? =
 
-* **Faster page load times** — Media loads from the nearest server instead of traveling across the world from your host
+* **Faster page load times** — Images load from the nearest server instead of traveling across the world from your host
 * **Better Core Web Vitals** — Improve LCP (Largest Contentful Paint) by delivering images faster
-* **Smooth video playback** — HLS streaming and video files buffer less with edge delivery
 * **Higher PageSpeed scores** — Google PageSpeed Insights will show improved performance
 * **Lower bounce rates** — Visitors don't wait for slow sites
+* **Better SEO** — Speed is a ranking factor
 
-= All Media Types Supported =
+= All Image Formats Supported =
 
-* **Images** — JPG, PNG, GIF, WebP, AVIF, SVG
-* **Video** — MP4, WebM, MOV with range request support
-* **Audio** — MP3, WAV, OGG, FLAC
-* **HLS Streaming** — M3U8 playlists and TS segments
+* **Standard** — JPG, JPEG, PNG, GIF
+* **Modern** — WebP, AVIF
+* **Vector** — SVG
+* **Other** — BMP, TIFF, ICO, HEIC, HEIF
 
-= How This Media CDN Works =
+= How This Image CDN Works =
 
-1. Install the media CDN plugin from WordPress
+1. Install the image CDN plugin from WordPress
 2. Flip the switch to activate
-3. Media instantly loads from 300+ global CDN servers
+3. Images instantly load from 300+ global CDN servers
 
 That's it. Your original files stay exactly where they are on your server. The plugin only changes URLs on your public pages. Deactivate it and everything returns to normal instantly.
 
-= Unlimited Media CDN Pricing =
+= Pricing =
 
-**Unlimited** ($19.99/mo)
+**Unlimited** ($9.99/mo)
 * Unlimited bandwidth
 * Custom CDN domain (cdn.yoursite.com)
 * Priority support
-* Images, video, audio, and HLS streaming
+* All image formats
 
 All plans include a 7-day money-back guarantee.
 
 = Self-Hosted Option =
 
-For developers who want full control, you can deploy the open-source worker on your own Cloudflare account. Your media, your infrastructure, zero external dependencies.
+For developers who want full control, you can deploy the open-source worker on your own Cloudflare account. Your images, your infrastructure, zero external dependencies.
 
-[Self-hosted CDN setup guide on GitHub](https://github.com/img-pro/bandwidth-saver-worker)
+[Self-hosted CDN setup guide on GitHub](https://github.com/img-pro/unlimited-cdn)
 
 = Works With Any WordPress Theme or Plugin =
 
-This media CDN is compatible with:
+This image CDN is compatible with:
 
 * **Page builders** — Elementor, Divi, Beaver Builder, Gutenberg, Bricks, Oxygen
 * **WooCommerce** — Product images, galleries, thumbnails
-* **Video players** — Plyr, VideoJS, native HTML5 video
 * **Lazy loading** — Works with native lazy load and plugins
 * **Responsive images** — Full srcset support
 * **Caching plugins** — WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache
+* **Image optimization** — ShortPixel, Imagify, Smush, EWWW
 
-= Who This Media CDN Is For =
+= Who This Image CDN Is For =
 
-* Video course creators and membership sites
-* Podcasters and audio content creators
 * Bloggers with image-heavy posts
-* WooCommerce stores with product photos and videos
+* WooCommerce stores with product photos
 * Recipe, travel, and photography sites
 * Portfolio and agency sites
-* Anyone who wants faster WordPress media loading without complexity
+* Anyone who wants faster WordPress image loading without complexity
+
+= Need Video/Audio CDN? =
+
+This plugin focuses on images for simplicity and cost-effectiveness. If you need video, audio, or HLS streaming support, check out our [Unlimited CDN plugin](https://wordpress.org/plugins/unlimited-cdn/) which supports all media types.
 
 == Installation ==
 
 **60-second setup. No technical knowledge required.**
 
-1. Install and activate the media CDN plugin
+1. Install and activate the image CDN plugin
 2. Go to **Settings > Bandwidth Saver**
 3. Toggle the CDN switch on
-4. Upgrade to Unlimited for $19.99/mo
+4. Upgrade to Unlimited for $9.99/mo
 
-Done. Your media is now loading faster from the global CDN.
+Done. Your images are now loading faster from the global CDN.
 
 == Frequently Asked Questions ==
 
-= What media types does this CDN support? =
+= What image formats does this CDN support? =
 
-The media CDN supports all common media formats: images (JPG, PNG, GIF, WebP, AVIF, SVG), video (MP4, WebM, MOV), audio (MP3, WAV, OGG, FLAC), and HLS streaming (M3U8 playlists and TS segments).
+The image CDN supports all common image formats: JPG, JPEG, PNG, GIF, WebP, AVIF, SVG, BMP, TIFF, ICO, HEIC, and HEIF.
 
-= Will this media CDN improve my Core Web Vitals? =
+= Will this image CDN improve my Core Web Vitals? =
 
-Yes. The media CDN improves LCP (Largest Contentful Paint) by serving media from servers close to your visitors. Faster media delivery means better Core Web Vitals scores.
-
-= How does video streaming work? =
-
-The CDN supports HTTP range requests, which means video files can be seeked and streamed without downloading the entire file. HLS streams work seamlessly with M3U8 playlist and TS segment delivery.
+Yes. The image CDN improves LCP (Largest Contentful Paint) by serving images from servers close to your visitors. Faster image delivery means better Core Web Vitals scores.
 
 = Does the CDN work with WooCommerce? =
 
-Yes. The media CDN works with WooCommerce product images, galleries, thumbnails, and product videos.
+Yes. The image CDN works with WooCommerce product images, galleries, and thumbnails.
 
 = Will this CDN work with my page builder? =
 
-Yes. This media CDN works with Elementor, Divi, Beaver Builder, Gutenberg blocks, Bricks, Oxygen, and any other WordPress page builder.
+Yes. This image CDN works with Elementor, Divi, Beaver Builder, Gutenberg blocks, Bricks, Oxygen, and any other WordPress page builder.
 
 = Is there a file size limit? =
 
-Files up to 500 MB are supported. This covers most images and many video files. For very large video files, consider dedicated video hosting.
+Files up to 500 MB are supported. This covers all typical image sizes.
 
 = Can I use my own domain for CDN URLs? =
 
 Yes. The Unlimited plan supports custom domains (cdn.yoursite.com) with automatic SSL.
 
-= What happens if the media CDN goes down? =
+= What happens if the image CDN goes down? =
 
-Your site automatically serves media directly from your server. Visitors won't notice anything — media just loads the normal way until the CDN is back.
+Your site automatically serves images directly from your server. Visitors won't notice anything — images just load the normal way until the CDN is back.
 
-= Is this media CDN safe? Will it break my site? =
+= Is this image CDN safe? Will it break my site? =
 
-The media CDN cannot break your site. Your original files stay on your server completely untouched. The plugin only changes URLs on your public pages. If the CDN ever has issues, your site automatically falls back to loading media directly. Deactivate the plugin and everything returns to normal instantly.
+The image CDN cannot break your site. Your original files stay on your server completely untouched. The plugin only changes URLs on your public pages. If the CDN ever has issues, your site automatically falls back to loading images directly. Deactivate the plugin and everything returns to normal instantly.
 
 = Do I need to change my DNS for this CDN? =
 
-No. Unlike other CDN services, this media CDN works immediately without any DNS changes. Everything happens from your WordPress admin.
+No. Unlike other CDN services, this image CDN works immediately without any DNS changes. Everything happens from your WordPress admin.
+
+= Does this support video or audio? =
+
+No. This plugin focuses on images only for simplicity and cost-effectiveness. If you need video, audio, or HLS streaming support, check out the [Unlimited CDN plugin](https://wordpress.org/plugins/unlimited-cdn/).
 
 == Screenshots ==
 
-1. Speed up your media in 60 seconds with the unlimited media CDN
+1. Speed up your images in 60 seconds with the Image CDN
 2. Track your CDN requests and performance
 3. Multi-site support and custom CDN domains
 4. Self-host option for full control
@@ -144,7 +146,7 @@ No. Unlike other CDN services, this media CDN works immediately without any DNS 
 
 = What Data Is Collected? =
 
-The media CDN plugin does not add cookies, tracking pixels, or analytics to your site.
+The image CDN plugin does not add cookies, tracking pixels, or analytics to your site.
 
 = Managed Mode =
 
@@ -152,19 +154,19 @@ The media CDN plugin does not add cookies, tracking pixels, or analytics to your
 * Email is collected when you upgrade to a paid plan
 * Custom domain settings are sent if configured
 
-Media is cached and served through a global edge network powered by Cloudflare.
+Images are cached and served through a global edge network powered by Cloudflare.
 
 = Self-Hosted Mode =
 
-No data is sent to us. Media is cached in your own Cloudflare account.
+No data is sent to us. Images are cached in your own Cloudflare account.
 
 == External Services ==
 
-This media CDN plugin connects to external services:
+This image CDN plugin connects to external services:
 
 **Cloudflare (R2 Storage and Workers)**
 
-* Purpose: Media caching and global edge CDN delivery
+* Purpose: Image caching and global edge CDN delivery
 * [Terms of Service](https://www.cloudflare.com/terms/)
 * [Privacy Policy](https://www.cloudflare.com/privacypolicy/)
 
@@ -179,15 +181,21 @@ Self-hosted users connect only to their own Cloudflare account.
 
 This service is provided on a fair use basis. While we don't impose hard limits, we reserve the right to contact users with exceptionally high usage to discuss dedicated plans or custom arrangements.
 
-The 500 MB per-file size limit applies to all media. For larger files or specialized requirements, please contact us to discuss options.
+The 500 MB per-file size limit applies to all images. For larger files or specialized requirements, please contact us to discuss options.
 
-We aim to provide reliable service for legitimate WordPress media delivery. Abuse, excessive automated requests, or use that degrades service for others may result in account review.
+We aim to provide reliable service for legitimate WordPress image delivery. Abuse, excessive automated requests, or use that degrades service for others may result in account review.
 
 == Changelog ==
 
+= 1.1 =
+* Changed: Converted from Media CDN to Image CDN
+* Removed: Video, audio, and HLS streaming support (use Unlimited CDN plugin instead)
+* Simplified: Image-only focus for better positioning and simpler codebase
+* Updated: All UI text and documentation for Image CDN
+
 = 1.0 =
 * New: Rebranded as "Bandwidth Saver: Unlimited Media CDN"
-* New: Simplified pricing - single Unlimited tier at $19.99/mo
+* New: Simplified pricing - single Unlimited tier at $9.99/mo
 * New: Video and audio CDN support with range requests
 * New: HLS streaming support (M3U8 and TS segments)
 * New: Request-based analytics (bandwidth tracking deprecated)
@@ -205,17 +213,17 @@ We aim to provide reliable service for legitimate WordPress media delivery. Abus
 * Fixed: Account card displays correctly when email is not set
 
 = 0.2.3 =
-* Improved: Clearer messaging about media CDN speed and Core Web Vitals benefits
+* Improved: Clearer messaging about CDN speed and Core Web Vitals benefits
 * Improved: Simplified onboarding copy
 * Improved: Updated screenshot captions
 * Fixed: PHPCS warnings for Stripe redirect handler
 
 == Upgrade Notice ==
 
-= 1.0 =
-Major update: Now supports video, audio, and HLS streaming. New simplified pricing at $19.99/mo for unlimited bandwidth.
+= 1.1 =
+Breaking change: Video, audio, and HLS streaming no longer supported. If you use video/audio CDN, install the Unlimited CDN plugin instead before upgrading.
 
 == Support ==
 
 * [Support Forum](https://wordpress.org/support/plugin/bandwidth-saver/)
-* [Self-Host Guide](https://github.com/img-pro/bandwidth-saver-worker)
+* [Self-Host Guide](https://github.com/img-pro/unlimited-cdn)

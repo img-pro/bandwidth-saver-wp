@@ -77,7 +77,7 @@ class ImgPro_CDN_Onboarding {
 
         // For step 1: only show if no existing subscription
         $tier = $all_settings['cloud_tier'] ?? '';
-        if (in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
+        if (in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
             return false;
         }
 
@@ -139,15 +139,16 @@ class ImgPro_CDN_Onboarding {
      * Step 1: Welcome - Show value proposition
      *
      * @since 0.1.7
+     * @since 1.1 Updated for Image CDN focus
      * @return void
      */
     private function render_step_welcome() {
         ?>
         <div class="imgpro-onboarding-content imgpro-onboarding-step-1">
-            <h1><?php esc_html_e('Speed up your media', 'bandwidth-saver'); ?></h1>
+            <h1><?php esc_html_e('Speed up your images', 'bandwidth-saver'); ?></h1>
 
             <p class="imgpro-onboarding-description">
-                <?php esc_html_e('Slow media hurts your SEO and drives visitors away.', 'bandwidth-saver'); ?><br><?php esc_html_e('Speed it up in 60 seconds.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Slow images hurt your SEO and drive visitors away.', 'bandwidth-saver'); ?><br><?php esc_html_e('Speed them up in 60 seconds.', 'bandwidth-saver'); ?>
             </p>
 
             <ul class="imgpro-onboarding-benefits">
@@ -157,11 +158,11 @@ class ImgPro_CDN_Onboarding {
                 </li>
                 <li>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span><strong><?php esc_html_e('Global delivery', 'bandwidth-saver'); ?></strong> — <?php esc_html_e('media loads from edge servers', 'bandwidth-saver'); ?></span>
+                    <span><strong><?php esc_html_e('Global delivery', 'bandwidth-saver'); ?></strong> — <?php esc_html_e('images load from edge servers', 'bandwidth-saver'); ?></span>
                 </li>
                 <li>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span><strong><?php esc_html_e('All media types', 'bandwidth-saver'); ?></strong> — <?php esc_html_e('images, video, audio & HLS', 'bandwidth-saver'); ?></span>
+                    <span><strong><?php esc_html_e('All image formats', 'bandwidth-saver'); ?></strong> — <?php esc_html_e('JPG, PNG, GIF, WebP, AVIF, SVG & more', 'bandwidth-saver'); ?></span>
                 </li>
             </ul>
 
@@ -184,7 +185,7 @@ class ImgPro_CDN_Onboarding {
             </div>
 
             <p class="imgpro-onboarding-hint">
-                <?php esc_html_e('$19.99/mo to support the service.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('$9.99/mo to support the service.', 'bandwidth-saver'); ?>
                 <button type="button" class="imgpro-btn-link imgpro-open-plan-selector"><?php esc_html_e('Learn more', 'bandwidth-saver'); ?></button>
             </p>
         </div>
@@ -205,7 +206,7 @@ class ImgPro_CDN_Onboarding {
             <h1><?php esc_html_e('Create your account', 'bandwidth-saver'); ?></h1>
 
             <p class="imgpro-onboarding-description">
-                <?php esc_html_e('Enter your email to set up your Media CDN.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Enter your email to set up your Image CDN.', 'bandwidth-saver'); ?>
             </p>
 
             <form id="imgpro-onboarding-connect-form" class="imgpro-onboarding-form">
@@ -282,7 +283,7 @@ class ImgPro_CDN_Onboarding {
             <h1><?php esc_html_e('Ready to go', 'bandwidth-saver'); ?></h1>
 
             <p class="imgpro-onboarding-description">
-                <?php esc_html_e('Toggle on to start serving media from the CDN.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Toggle on to start serving images from the CDN.', 'bandwidth-saver'); ?>
             </p>
 
             <div class="imgpro-activate-card" id="imgpro-activate-card">
@@ -291,14 +292,14 @@ class ImgPro_CDN_Onboarding {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"/></svg>
                     </div>
                     <div class="imgpro-activate-text">
-                        <strong><?php esc_html_e('Media CDN', 'bandwidth-saver'); ?></strong>
-                        <span><?php esc_html_e('Serve media from edge servers worldwide', 'bandwidth-saver'); ?></span>
+                        <strong><?php esc_html_e('Image CDN', 'bandwidth-saver'); ?></strong>
+                        <span><?php esc_html_e('Serve images from edge servers worldwide', 'bandwidth-saver'); ?></span>
                     </div>
                 </div>
                 <label class="imgpro-toggle" for="imgpro-activate-toggle">
                     <input type="checkbox" id="imgpro-activate-toggle">
                     <span class="imgpro-toggle-slider"></span>
-                    <span class="screen-reader-text"><?php esc_html_e('Enable Media CDN', 'bandwidth-saver'); ?></span>
+                    <span class="screen-reader-text"><?php esc_html_e('Enable Image CDN', 'bandwidth-saver'); ?></span>
                 </label>
             </div>
 
@@ -307,7 +308,7 @@ class ImgPro_CDN_Onboarding {
                 <ul>
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>
-                        <?php esc_html_e('Media URLs on your public pages point to the CDN', 'bandwidth-saver'); ?>
+                        <?php esc_html_e('Image URLs on your public pages point to the CDN', 'bandwidth-saver'); ?>
                     </li>
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>
@@ -323,7 +324,7 @@ class ImgPro_CDN_Onboarding {
                     </li>
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>
-                        <?php esc_html_e('If anything goes wrong, media loads directly from your site', 'bandwidth-saver'); ?>
+                        <?php esc_html_e('If anything goes wrong, images load directly from your site', 'bandwidth-saver'); ?>
                     </li>
                 </ul>
             </div>
@@ -351,7 +352,7 @@ class ImgPro_CDN_Onboarding {
             <h1><?php esc_html_e('You\'re all set!', 'bandwidth-saver'); ?></h1>
 
             <p class="imgpro-onboarding-description">
-                <?php esc_html_e('Your media is now being served from edge locations around the world. Visit your site to start caching.', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Your images are now being served from edge locations around the world. Visit your site to start caching.', 'bandwidth-saver'); ?>
             </p>
 
             <div class="imgpro-onboarding-actions imgpro-onboarding-actions-split">

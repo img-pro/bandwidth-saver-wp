@@ -158,7 +158,7 @@ class ImgPro_CDN_Admin {
 
             // Enable if subscription is valid
             $tier_id = $this->api->get_tier_id($site);
-            $valid_tiers = [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE];
+            $valid_tiers = [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE];
 
             if (in_array($tier_id, $valid_tiers, true)) {
                 $this->settings->update([
@@ -467,7 +467,7 @@ class ImgPro_CDN_Admin {
                     'checkoutCancelled' => __('Checkout cancelled. You can try again anytime.', 'bandwidth-saver'),
                     // Toggle UI text
                     'cdnActiveHeading' => __('Your media is loading faster', 'bandwidth-saver'),
-                    'cdnInactiveHeading' => __('Media CDN is Off', 'bandwidth-saver'),
+                    'cdnInactiveHeading' => __('Image CDN is Off', 'bandwidth-saver'),
                     'cdnActiveDesc' => __('Visitors worldwide are getting faster page loads.', 'bandwidth-saver'),
                     'cdnInactiveDesc' => __('Turn on to speed up your media.', 'bandwidth-saver'),
                     // Custom domain
@@ -478,7 +478,7 @@ class ImgPro_CDN_Admin {
                     'domainRemoved' => __('Custom domain removed.', 'bandwidth-saver'),
                     'domainActive' => __('Custom domain is active.', 'bandwidth-saver'),
                     'confirmRemoveDomain' => __('Remove this custom domain? Media will be served from the default domain.', 'bandwidth-saver'),
-                    'confirmRemoveCdnDomain' => __('Remove this CDN domain? The Media CDN will be disabled.', 'bandwidth-saver'),
+                    'confirmRemoveCdnDomain' => __('Remove this CDN domain? The Image CDN will be disabled.', 'bandwidth-saver'),
                     'cdnDomainRemoved' => __('CDN domain removed.', 'bandwidth-saver'),
                     // Upgrade prompts
                     'upgradeTitle' => __('Need more bandwidth?', 'bandwidth-saver'),
@@ -820,13 +820,13 @@ class ImgPro_CDN_Admin {
                         <div>
                             <h2 id="imgpro-toggle-heading">
                                 <?php echo $is_enabled
-                                    ? esc_html__('Your media is loading faster', 'bandwidth-saver')
-                                    : esc_html__('Media CDN is Off', 'bandwidth-saver'); ?>
+                                    ? esc_html__('Your images are loading faster', 'bandwidth-saver')
+                                    : esc_html__('Image CDN is Off', 'bandwidth-saver'); ?>
                             </h2>
                             <p id="imgpro-toggle-description">
                                 <?php echo $is_enabled
                                     ? esc_html__('Visitors worldwide are getting faster page loads.', 'bandwidth-saver')
-                                    : esc_html__('Turn on to speed up your media.', 'bandwidth-saver'); ?>
+                                    : esc_html__('Turn on to speed up your images.', 'bandwidth-saver'); ?>
                             </p>
                         </div>
                     </div>
@@ -842,7 +842,7 @@ class ImgPro_CDN_Admin {
                             aria-checked="<?php echo esc_attr( $is_enabled ? 'true' : 'false' ); ?>"
                         >
                         <span class="imgpro-toggle-slider"></span>
-                        <span class="screen-reader-text"><?php esc_html_e('Toggle Media CDN', 'bandwidth-saver'); ?></span>
+                        <span class="screen-reader-text"><?php esc_html_e('Toggle Image CDN', 'bandwidth-saver'); ?></span>
                     </label>
                 </div>
             </form>
@@ -1162,7 +1162,7 @@ class ImgPro_CDN_Admin {
      */
     private function render_cloud_tab($settings) {
         $tier = $settings['cloud_tier'] ?? ImgPro_CDN_Settings::TIER_NONE;
-        $has_subscription = in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE, ImgPro_CDN_Settings::TIER_PAST_DUE], true);
+        $has_subscription = in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE, ImgPro_CDN_Settings::TIER_PAST_DUE], true);
         ?>
         <div class="imgpro-tab-panel" role="tabpanel">
             <?php if (!$has_subscription): ?>
@@ -1284,9 +1284,9 @@ class ImgPro_CDN_Admin {
                             </svg>
                             <span class="imgpro-account-card__status-text"><?php esc_html_e('Subscription Active', 'bandwidth-saver'); ?></span>
                         </div>
-                        <span class="imgpro-account-card__description"><?php esc_html_e('Unlimited media delivery from 300+ edge servers.', 'bandwidth-saver'); ?></span>
+                        <span class="imgpro-account-card__description"><?php esc_html_e('Unlimited image delivery from 300+ edge servers.', 'bandwidth-saver'); ?></span>
                     <?php else: ?>
-                        <strong class="imgpro-account-card__headline"><?php esc_html_e('Enjoying the Media CDN?', 'bandwidth-saver'); ?></strong>
+                        <strong class="imgpro-account-card__headline"><?php esc_html_e('Enjoying the Image CDN?', 'bandwidth-saver'); ?></strong>
                         <span class="imgpro-account-card__description"><?php esc_html_e('Activate your subscription to support continued development.', 'bandwidth-saver'); ?></span>
                     <?php endif; ?>
                 </div>
@@ -1309,12 +1309,12 @@ class ImgPro_CDN_Admin {
                 <?php endif; ?>
                 <?php if ($is_paid && !empty($email)): ?>
                     <span class="imgpro-separator">·</span>
-                    <span class="imgpro-account-card__price"><?php esc_html_e('$19.99/mo', 'bandwidth-saver'); ?></span>
+                    <span class="imgpro-account-card__price"><?php esc_html_e('$9.99/mo', 'bandwidth-saver'); ?></span>
                 <?php elseif (!$is_paid): ?>
                     <?php if (!empty($email)): ?>
                         <span class="imgpro-separator">·</span>
                     <?php endif; ?>
-                    <span class="imgpro-account-card__price"><?php esc_html_e('$19.99/mo', 'bandwidth-saver'); ?></span>
+                    <span class="imgpro-account-card__price"><?php esc_html_e('$9.99/mo', 'bandwidth-saver'); ?></span>
                 <?php endif; ?>
             </div>
         </div>
@@ -1359,7 +1359,7 @@ class ImgPro_CDN_Admin {
                     </ol>
 
                     <div class="imgpro-setup-actions">
-                        <a href="https://github.com/img-pro/bandwidth-saver-worker#quick-start" target="_blank" class="imgpro-btn imgpro-btn-primary">
+                        <a href="https://github.com/img-pro/unlimited-cdn#quick-start" target="_blank" class="imgpro-btn imgpro-btn-primary">
                             <?php esc_html_e('View Setup Guide', 'bandwidth-saver'); ?>
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 8.667V12a1.333 1.333 0 01-1.333 1.333H4A1.333 1.333 0 012.667 12V5.333A1.333 1.333 0 014 4h3.333M10 2h4v4M6.667 9.333L14 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>

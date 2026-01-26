@@ -445,8 +445,8 @@
         }
 
         const originalText = $button.text();
-        // Get tier from parameter, button data attribute, or default to 'unlimited'
-        const tier = tierId || $button.data('tier') || 'unlimited';
+        // Get tier from parameter, button data attribute, or default to 'image'
+        const tier = tierId || $button.data('tier') || 'image';
         $button.addClass('is-loading').prop('disabled', true).text(imgproCdnAdmin.i18n.creatingCheckout);
 
         $.ajax({
