@@ -42,6 +42,8 @@
 
     /* Colors - Error */
     --imgpro-error-50: #fef2f2;
+    --imgpro-error-100: #fee2e2;
+    --imgpro-error-200: #fecaca;
     --imgpro-error-500: #ef4444;
     --imgpro-error-600: #dc2626;
 
@@ -152,6 +154,7 @@
     --imgpro-transition-fast: 150ms;
     --imgpro-transition-base: 200ms;
     --imgpro-transition-slow: 300ms;
+    --imgpro-transition: var(--imgpro-transition-base);
     --imgpro-ease-out: cubic-bezier(0, 0, 0.2, 1);
     --imgpro-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --imgpro-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2222,8 +2225,8 @@ a.imgpro-btn-primary:visited {
     font-family: var(--imgpro-font-mono);
     font-size: var(--imgpro-text-xs);
     font-weight: 500;
-    color: var(--imgpro-text-tertiary);
-    background: var(--imgpro-bg-secondary);
+    color: var(--imgpro-text-muted);
+    background: var(--imgpro-bg-muted);
     padding: var(--imgpro-space-1) var(--imgpro-space-2);
     border-radius: var(--imgpro-radius-sm);
     letter-spacing: 0.02em;
@@ -3570,8 +3573,8 @@ body.imgpro-modal-open {
 
 .imgpro-verification-input input:focus {
     outline: none;
-    border-color: var(--imgpro-primary);
-    background: var(--imgpro-white);
+    border-color: var(--imgpro-primary-500);
+    background: var(--imgpro-bg);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 

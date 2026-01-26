@@ -156,11 +156,13 @@ class ImgPro_CDN_Admin {
             // Save refreshed site data
             $this->save_site_to_settings($site);
 
-            // Enable if subscription is valid
+            // Check if site has an active paid subscription
+            // After payment return, we expect a paid tier - if still 'free', webhook may be pending
             $tier_id = $this->api->get_tier_id($site);
-            $valid_tiers = [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE];
+            $paid_tiers = [ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE];
 
-            if (in_array($tier_id, $valid_tiers, true)) {
+            if (in_array($tier_id, $paid_tiers, true)) {
+                // Paid tier confirmed - enable CDN
                 $this->settings->update([
                     'cloud_enabled' => true,
                     'onboarding_completed' => true,
@@ -170,7 +172,9 @@ class ImgPro_CDN_Admin {
                 exit;
             }
 
-            // Site found but tier not ready yet (webhook may be pending)
+            // Still on free tier after payment - webhook may be pending
+            // Set transient to trigger retry on next page load
+            set_transient('imgpro_cdn_subscription_pending', true, 120);
             delete_transient('imgpro_cdn_pending_payment');
             wp_safe_redirect(admin_url('options-general.php?page=imgpro-cdn-settings&tab=cloud&subscription_pending=1'));
             exit;
@@ -631,13 +635,42 @@ class ImgPro_CDN_Admin {
 
         if (filter_input(INPUT_GET, 'subscription_pending', FILTER_VALIDATE_BOOLEAN)) {
             ?>
-            <div class="imgpro-notice imgpro-notice-info">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/><path d="M10 6v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <div class="imgpro-notice imgpro-notice-info" id="imgpro-subscription-pending-notice">
+                <svg class="imgpro-spinner" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="50" stroke-linecap="round"/></svg>
                 <div>
-                    <strong><?php esc_html_e('Subscription received! Activating your account...', 'bandwidth-saver'); ?></strong>
-                    <p><?php esc_html_e('Enable the CDN toggle below to start serving media faster.', 'bandwidth-saver'); ?></p>
+                    <strong><?php esc_html_e('Almost there!', 'bandwidth-saver'); ?></strong>
+                    <p><?php esc_html_e('Setting up your Image CDN...', 'bandwidth-saver'); ?></p>
                 </div>
             </div>
+            <script>
+            (function() {
+                var retries = 0;
+                var maxRetries = 6;
+                function checkSubscription() {
+                    if (retries >= maxRetries) {
+                        document.getElementById('imgpro-subscription-pending-notice').innerHTML =
+                            '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/><path d="M10 6v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+                            '<div><strong><?php echo esc_js(__('Taking longer than expected', 'bandwidth-saver')); ?></strong>' +
+                            '<p><?php echo esc_js(__('Please refresh the page.', 'bandwidth-saver')); ?></p></div>';
+                        return;
+                    }
+                    retries++;
+                    jQuery.post(ajaxurl, {
+                        action: 'imgpro_cdn_sync_account',
+                        nonce: '<?php echo esc_js(wp_create_nonce('imgpro_cdn_sync')); ?>'
+                    }, function(response) {
+                        if (response.success && response.data && response.data.is_paid) {
+                            window.location.href = '<?php echo esc_url(admin_url('options-general.php?page=imgpro-cdn-settings&tab=cloud&activated=1')); ?>';
+                        } else {
+                            setTimeout(checkSubscription, 3000);
+                        }
+                    }).fail(function() {
+                        setTimeout(checkSubscription, 3000);
+                    });
+                }
+                setTimeout(checkSubscription, 2000);
+            })();
+            </script>
             <?php
         }
 

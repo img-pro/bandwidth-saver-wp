@@ -1,6 +1,6 @@
 # Bandwidth Saver: Image CDN
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-1.1-blue.svg)](https://wordpress.org/plugins/bandwidth-saver/)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://wordpress.org/plugins/bandwidth-saver/)
 [![Requires WordPress Version](https://img.shields.io/badge/wordpress-6.2%2B-blue.svg)](https://wordpress.org/download/)
 [![Requires PHP Version](https://img.shields.io/badge/php-7.4%2B-purple.svg)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-red.svg)](LICENSE)

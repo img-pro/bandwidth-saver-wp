@@ -71,6 +71,7 @@ class ImgPro_CDN_Admin_Ajax {
         add_action('wp_ajax_imgpro_cdn_update_onboarding_step', [$this, 'ajax_update_onboarding_step']);
         add_action('wp_ajax_imgpro_cdn_complete_onboarding', [$this, 'ajax_complete_onboarding']);
         add_action('wp_ajax_imgpro_cdn_sync_stats', [$this, 'ajax_sync_stats']);
+        add_action('wp_ajax_imgpro_cdn_sync_account', [$this, 'ajax_sync_account']);
         add_action('wp_ajax_imgpro_cdn_health_check', [$this, 'ajax_health_check']);
 
         // Analytics endpoints
@@ -570,6 +571,62 @@ class ImgPro_CDN_Admin_Ajax {
                 'bandwidth_used' => ImgPro_CDN_Settings::format_bytes($updated_settings['bandwidth_used'] ?? 0),
                 'bandwidth_limit' => $is_unlimited ? __('Unlimited', 'bandwidth-saver') : ImgPro_CDN_Settings::format_bytes($bandwidth_limit, 0),
             ]
+        ]);
+    }
+
+    /**
+     * AJAX handler for syncing account status
+     *
+     * Used for checking if subscription is activated after payment.
+     * Returns is_paid status to allow frontend polling.
+     *
+     * @since 1.1.1
+     * @return void
+     */
+    public function ajax_sync_account() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'imgpro_cdn_sync')) {
+            wp_send_json_error(['message' => __('Security check failed', 'bandwidth-saver')]);
+        }
+        ImgPro_CDN_Security::check_permission();
+        ImgPro_CDN_Security::check_rate_limit('sync_account');
+
+        $api_key = $this->settings->get_api_key();
+
+        if (empty($api_key)) {
+            wp_send_json_error(['message' => __('No subscription found.', 'bandwidth-saver')]);
+            return;
+        }
+
+        // Force fetch fresh site data
+        $site = $this->api->get_site($api_key, true);
+
+        if (is_wp_error($site)) {
+            wp_send_json_error([
+                'message' => __('Could not sync account. Please try again.', 'bandwidth-saver'),
+                'code' => 'sync_error'
+            ]);
+            return;
+        }
+
+        // Update local settings with fresh data
+        $this->update_settings_from_site($site);
+
+        // Get updated settings and check if paid
+        $updated_settings = $this->settings->get_all();
+        $is_paid = ImgPro_CDN_Settings::is_paid($updated_settings);
+
+        // If paid, enable CDN and clear pending transient
+        if ($is_paid) {
+            $this->settings->update([
+                'cloud_enabled' => true,
+                'onboarding_completed' => true,
+            ]);
+            delete_transient('imgpro_cdn_subscription_pending');
+        }
+
+        wp_send_json_success([
+            'is_paid' => $is_paid,
+            'tier_id' => $updated_settings['cloud_tier'] ?? 'free',
         ]);
     }
 

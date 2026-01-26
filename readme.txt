@@ -4,7 +4,7 @@ Tags: image cdn, cdn, image optimization, core web vitals, page speed
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -186,6 +186,10 @@ The 500 MB per-file size limit applies to all images. For larger files or specia
 We aim to provide reliable service for legitimate WordPress image delivery. Abuse, excessive automated requests, or use that degrades service for others may result in account review.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fixed: Subscription status now updates correctly after checkout
+* Improved: Smoother activation experience
 
 = 1.1 =
 * Changed: Converted from Media CDN to Image CDN
