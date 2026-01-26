@@ -1,0 +1,75 @@
+# WordPress.org Distribution Ignore
+# Files and directories listed here will be excluded from the release zip
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Development files
+.distignore
+release.sh
+README.md
+.dev
+.claude
+.svn-credentials
+.svnignore
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# WordPress.org assets (uploaded to SVN separately)
+.wordpress-org
+assets/.wordpress-org
+
+# Dependencies
+node_modules
+vendor
+composer.json
+composer.lock
+package.json
+package-lock.json
+yarn.lock
+
+# Build artifacts
+*.zip
+dist
+build
+
+# IDE and editor files
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+.phpintel
+
+# Testing
+tests
+phpunit.xml
+phpunit.xml.dist
+.phpcs.xml
+.phpcs.xml.dist
+phpcs.xml
+phpcs.xml.dist
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+circle.yml
+.circleci
+
+# Logs
+*.log
+error_log
+debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache
