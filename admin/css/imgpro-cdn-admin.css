@@ -2006,11 +2006,6 @@ a.imgpro-btn-primary:visited {
     margin-bottom: var(--imgpro-space-2);
 }
 
-/* Active subscription variant - subtle green accent */
-.imgpro-account-card--active {
-    border-color: rgba(16, 185, 129, 0.3);
-}
-
 /* Account card main content area */
 .imgpro-account-card__main {
     display: flex;
@@ -2029,26 +2024,7 @@ a.imgpro-btn-primary:visited {
     min-width: 0;
 }
 
-/* Status display (for active subscriptions) */
-.imgpro-account-card__status {
-    display: flex;
-    align-items: center;
-    gap: var(--imgpro-space-2);
-}
-
-.imgpro-account-card__status-icon {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-}
-
-.imgpro-account-card__status-text {
-    font-size: var(--imgpro-text-base);
-    font-weight: 600;
-    color: #059669;
-}
-
-/* Headline (for pending subscriptions) */
+/* Headline */
 .imgpro-account-card__headline {
     font-size: var(--imgpro-text-base);
     font-weight: 600;
@@ -2060,6 +2036,15 @@ a.imgpro-btn-primary:visited {
     font-size: var(--imgpro-text-sm);
     color: var(--imgpro-text-secondary);
     line-height: 1.5;
+}
+
+.imgpro-account-card__description a {
+    color: var(--imgpro-primary);
+    text-decoration: none;
+}
+
+.imgpro-account-card__description a:hover {
+    text-decoration: underline;
 }
 
 /* Actions */
@@ -2086,10 +2071,6 @@ a.imgpro-btn-primary:visited {
         align-items: stretch;
         text-align: center;
         gap: var(--imgpro-space-4);
-    }
-
-    .imgpro-account-card__status {
-        justify-content: center;
     }
 
     .imgpro-account-card__footer {

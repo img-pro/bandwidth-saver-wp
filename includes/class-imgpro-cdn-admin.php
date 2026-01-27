@@ -890,7 +890,7 @@ class ImgPro_CDN_Admin {
     }
 
     /**
-     * Render stats grid
+     * Render usage chart
      *
      * @since 0.1.7
      * @param array $settings Plugin settings.
@@ -1145,11 +1145,8 @@ class ImgPro_CDN_Admin {
      * Render Cloud settings (for active users)
      *
      * Layout hierarchy:
-     * 1. CDN Toggle
-     * 2. Account Card
-     * 3. Stats Grid
-     * 4. Custom Domain
-     * 5. Advanced Settings
+     * Free: Toggle → Safety Note → Chart → Account Card
+     * Paid: Toggle → Chart → Stats → Custom Domain → Source URLs → Account Card
      *
      * @since 0.1.7
      * @param array $settings Plugin settings.
@@ -1193,7 +1190,7 @@ class ImgPro_CDN_Admin {
             <?php // 6. Account Card (always shown, at bottom) ?>
             <?php $this->render_account_card($settings, $email); ?>
 
-            <?php // 5. Developer Options (only shown when WP_DEBUG is enabled) ?>
+            <?php // 7. Developer Options (only shown when WP_DEBUG is enabled) ?>
             <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
             <div class="imgpro-card imgpro-dev-options">
                 <form method="post" action="options.php" class="imgpro-dev-options-form">
