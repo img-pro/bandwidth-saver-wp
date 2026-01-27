@@ -261,6 +261,10 @@ class ImgPro_CDN_Admin {
         if ($domain) {
             $update_data['custom_domain'] = $domain['domain'];
             $update_data['custom_domain_status'] = $domain['status'];
+        } else {
+            // Server has no domain — clear any stale local data
+            $update_data['custom_domain'] = '';
+            $update_data['custom_domain_status'] = '';
         }
 
         $this->settings->update($update_data);
@@ -330,11 +334,19 @@ class ImgPro_CDN_Admin {
             $update_data['bandwidth_used'] = $usage['bandwidth_used'];
             $settings_changed = true;
         }
-        // Update custom domain if present
+        // Sync custom domain state (update or clear stale local data)
         $domain = $this->api->get_custom_domain($site);
-        if ($domain && $domain['status'] !== ($settings['custom_domain_status'] ?? '')) {
-            $update_data['custom_domain'] = $domain['domain'];
-            $update_data['custom_domain_status'] = $domain['status'];
+        if ($domain) {
+            if ($domain['status'] !== ($settings['custom_domain_status'] ?? '') ||
+                $domain['domain'] !== ($settings['custom_domain'] ?? '')) {
+                $update_data['custom_domain'] = $domain['domain'];
+                $update_data['custom_domain_status'] = $domain['status'];
+                $settings_changed = true;
+            }
+        } elseif (!empty($settings['custom_domain'])) {
+            // Server has no domain but local settings do — clear stale data
+            $update_data['custom_domain'] = '';
+            $update_data['custom_domain_status'] = '';
             $settings_changed = true;
         }
 
@@ -422,7 +434,8 @@ class ImgPro_CDN_Admin {
                 'pricing' => $pricing,
                 'tiers' => $tiers_by_id,
                 // Pre-load source domains from sync to avoid separate AJAX call
-                'sourceDomains' => $this->synced_data['domains'] ?? null,
+                // Batched endpoint uses 'items' key; JS expects 'domains' key
+                'sourceDomains' => $this->normalize_source_domains($this->synced_data['domains'] ?? null),
                 // Pre-load usage analytics from sync (insights + daily chart)
                 'usage' => $this->transform_usage_for_js($this->synced_data['usage'] ?? null),
                 'i18n' => [
@@ -516,6 +529,36 @@ class ImgPro_CDN_Admin {
             ],
             'daily' => $usage['daily'] ?? [],
         ];
+    }
+
+    /**
+     * Normalize source domains from batched API response for JavaScript.
+     *
+     * The batched /api/site?include=domains endpoint returns domains under an
+     * 'items' key, but JavaScript expects a 'domains' key (matching the shape
+     * of the dedicated /api/source-urls endpoint).
+     *
+     * @since 1.1.3
+     * @param array|null $domains Raw domains data from batched API response.
+     * @return array|null Normalized domains data for JavaScript.
+     */
+    private function normalize_source_domains($domains) {
+        if (empty($domains)) {
+            return null;
+        }
+
+        // Already in expected format (has 'domains' key)
+        if (isset($domains['domains'])) {
+            return $domains;
+        }
+
+        // Batched endpoint uses 'items' key — remap to 'domains'
+        if (isset($domains['items'])) {
+            $domains['domains'] = $domains['items'];
+            unset($domains['items']);
+        }
+
+        return $domains;
     }
 
     /**

@@ -4,7 +4,7 @@ Tags: image cdn, cdn, image optimization, core web vitals, page speed
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -186,6 +186,13 @@ The 500 MB per-file size limit applies to all images. For larger files or specia
 We aim to provide reliable service for legitimate WordPress image delivery. Abuse, excessive automated requests, or use that degrades service for others may result in account review.
 
 == Changelog ==
+
+= 1.1.3 =
+* Fixed: Source URLs section showing empty on initial page load
+* Fixed: Custom domain removal failing on sites with stale local data
+* Fixed: Paid plans blocked from adding source URLs (unlimited domains)
+* Fixed: Stale cached data overwriting settings after domain changes
+* Improved: Custom domain state now syncs correctly when removed server-side
 
 = 1.1.2 =
 * New: Cleaner dashboard — see only what matters for your plan

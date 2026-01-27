@@ -1039,6 +1039,8 @@ class ImgPro_CDN_Admin_Ajax {
             $this->settings->update([
                 'custom_domain_status' => $result['status'],
             ]);
+            // Clear stale batched cache so page reload fetches the updated D1 status
+            $this->api->invalidate_cache();
         }
 
         wp_send_json_success($result);
@@ -1070,9 +1072,33 @@ class ImgPro_CDN_Admin_Ajax {
         $result = $this->api->remove_domain($api_key);
 
         if (is_wp_error($result)) {
+            $error_code = $result->get_error_code();
+
+            // If the server says no domain exists, clear stale local settings and cache
+            if ('bad_request' === $error_code) {
+                $this->settings->update([
+                    'custom_domain' => '',
+                    'custom_domain_status' => '',
+                ]);
+                $this->api->invalidate_cache();
+
+                wp_send_json_success([
+                    'message' => __('Custom domain removed.', 'bandwidth-saver')
+                ]);
+                return;
+            }
+
+            if ('connection_error' === $error_code) {
+                wp_send_json_error([
+                    'message' => __('Could not connect to service. Please try again.', 'bandwidth-saver'),
+                    'code' => 'connection_error'
+                ]);
+                return;
+            }
+
             wp_send_json_error([
-                'message' => __('Could not remove domain. Please try again.', 'bandwidth-saver'),
-                'code' => $result->get_error_code()
+                'message' => $result->get_error_message(),
+                'code' => $error_code
             ]);
             return;
         }
