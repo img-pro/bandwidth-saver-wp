@@ -1240,30 +1240,9 @@ class ImgPro_CDN_Admin_Ajax {
         // Transform insights for frontend
         $insights = $data['insights'] ?? [];
         $transformed_insights = [
-            'avg_daily_bandwidth' => isset($insights['bandwidth']['avg_daily'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['avg_daily'])
-                : null,
-            'projected_period_bandwidth' => isset($insights['bandwidth']['projected'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['projected'])
-                : null,
-            'cache_hit_rate' => isset($insights['recent']['cache_hit_rate'])
-                ? $insights['recent']['cache_hit_rate']
-                : null,
-            'cache_hits' => isset($insights['recent']['cache_hits'])
-                ? $insights['recent']['cache_hits']
-                : null,
-            'cache_misses' => isset($insights['recent']['cache_misses'])
-                ? $insights['recent']['cache_misses']
-                : null,
-            'days_remaining' => isset($insights['period']['days_remaining'])
-                ? $insights['period']['days_remaining']
-                : null,
-            'total_requests' => isset($insights['recent']['requests'])
-                ? $insights['recent']['requests']
-                : null,
-            // New request-focused fields (v1.0+)
-            'requests' => isset($insights['requests']) ? $insights['requests'] : null,
-            'period' => isset($insights['period']) ? $insights['period'] : null,
+            'cache_hit_rate' => $insights['recent']['cache_hit_rate'] ?? null,
+            'cache_hits' => $insights['recent']['cache_hits'] ?? null,
+            'total_requests' => $insights['recent']['requests'] ?? null,
         ];
 
         // Extract daily array
@@ -1307,30 +1286,9 @@ class ImgPro_CDN_Admin_Ajax {
 
         // Transform API response to match frontend expectations
         $transformed = [
-            'avg_daily_bandwidth' => isset($insights['bandwidth']['avg_daily'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['avg_daily'])
-                : null,
-            'projected_period_bandwidth' => isset($insights['bandwidth']['projected'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['projected'])
-                : null,
-            'cache_hit_rate' => isset($insights['recent']['cache_hit_rate'])
-                ? $insights['recent']['cache_hit_rate']
-                : null,
-            'cache_hits' => isset($insights['recent']['cache_hits'])
-                ? $insights['recent']['cache_hits']
-                : null,
-            'cache_misses' => isset($insights['recent']['cache_misses'])
-                ? $insights['recent']['cache_misses']
-                : null,
-            'days_remaining' => isset($insights['period']['days_remaining'])
-                ? $insights['period']['days_remaining']
-                : null,
-            'total_requests' => isset($insights['recent']['requests'])
-                ? $insights['recent']['requests']
-                : null,
-            // New request-focused fields (v1.0+)
-            'requests' => isset($insights['requests']) ? $insights['requests'] : null,
-            'period' => isset($insights['period']) ? $insights['period'] : null,
+            'cache_hit_rate' => $insights['recent']['cache_hit_rate'] ?? null,
+            'cache_hits' => $insights['recent']['cache_hits'] ?? null,
+            'total_requests' => $insights['recent']['requests'] ?? null,
         ];
 
         wp_send_json_success($transformed);

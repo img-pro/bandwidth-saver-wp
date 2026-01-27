@@ -1028,7 +1028,7 @@ a.imgpro-btn-primary:visited {
     justify-content: space-between;
     gap: var(--imgpro-space-6);
     padding: var(--imgpro-space-5) var(--imgpro-space-6);
-    margin-bottom: var(--imgpro-space-4);
+    margin-bottom: var(--imgpro-space-2);
     background: var(--imgpro-bg);
     border: 1px solid var(--imgpro-border);
     border-radius: var(--imgpro-radius-lg);
@@ -1088,18 +1088,14 @@ a.imgpro-btn-primary:visited {
    Dashboard - Analytics Section
    ========================================================================== */
 
-.imgpro-analytics-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imgpro-space-6);
-    margin-bottom: var(--imgpro-space-6);
-}
+/* Analytics section removed - chart and stats are independent elements */
 
 /* Stats Grid */
 .imgpro-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--imgpro-space-4);
+    margin-bottom: var(--imgpro-space-2);
 }
 
 @media (max-width: 1200px) {
@@ -1227,6 +1223,7 @@ a.imgpro-btn-primary:visited {
     border-radius: var(--imgpro-radius-lg);
     box-shadow: var(--imgpro-shadow-sm);
     overflow: hidden;
+    margin-bottom: var(--imgpro-space-2);
 }
 
 .imgpro-chart-header {
@@ -1978,7 +1975,7 @@ a.imgpro-btn-primary:visited {
 }
 
 .imgpro-safety-note {
-    margin: 0;
+    margin: 0 0 var(--imgpro-space-2) 0;
     padding: var(--imgpro-space-3) var(--imgpro-space-4);
     font-size: var(--imgpro-text-xs);
     color: var(--imgpro-text-secondary);
@@ -2013,7 +2010,7 @@ a.imgpro-btn-primary:visited {
     border-radius: var(--imgpro-radius-lg);
     box-shadow: var(--imgpro-card-shadow);
     overflow: hidden;
-    margin-bottom: var(--imgpro-space-6);
+    margin-bottom: var(--imgpro-space-2);
 }
 
 /* Active subscription variant - subtle green accent */
@@ -2478,151 +2475,6 @@ a.imgpro-btn-primary:visited {
    - Configuration Card: Form for domain input
    ========================================================================== */
 
-/* Pending Status Card */
-
-.imgpro-domain-pending-card {
-    background: var(--imgpro-bg);
-    border: 1px solid var(--imgpro-border);
-    border-radius: var(--imgpro-radius-lg);
-    box-shadow: var(--imgpro-card-shadow);
-    margin-bottom: var(--imgpro-space-6);
-    overflow: hidden;
-}
-
-.imgpro-domain-pending-card.is-pending {
-    border-color: var(--imgpro-warning-500);
-    border-left-width: 4px;
-}
-
-.imgpro-domain-pending-card.is-pending-ssl {
-    border-color: var(--imgpro-primary-500);
-    border-left-width: 4px;
-}
-
-.imgpro-domain-pending-card.is-error {
-    border-color: var(--imgpro-error-500);
-    border-left-width: 4px;
-}
-
-.imgpro-domain-pending-header {
-    display: flex;
-    align-items: center;
-    gap: var(--imgpro-space-4);
-    padding: var(--imgpro-space-5) var(--imgpro-space-6);
-}
-
-.imgpro-domain-pending-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--imgpro-radius);
-    flex-shrink: 0;
-}
-
-.imgpro-domain-pending-card.is-pending .imgpro-domain-pending-icon {
-    background: var(--imgpro-warning-100);
-    color: var(--imgpro-warning-600);
-}
-
-.imgpro-domain-pending-card.is-pending-ssl .imgpro-domain-pending-icon {
-    background: var(--imgpro-primary-100);
-    color: var(--imgpro-primary-600);
-}
-
-.imgpro-domain-pending-card.is-pending-ssl .imgpro-domain-pending-icon svg {
-    animation: imgpro-pulse 2s ease-in-out infinite;
-}
-
-@keyframes imgpro-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.imgpro-domain-pending-card.is-error .imgpro-domain-pending-icon {
-    background: var(--imgpro-error-50);
-    color: var(--imgpro-error-500);
-}
-
-.imgpro-domain-pending-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.imgpro-domain-pending-info strong {
-    display: block;
-    font-size: var(--imgpro-text-base);
-    font-weight: 600;
-    color: var(--imgpro-text);
-    margin-bottom: var(--imgpro-space-1);
-}
-
-.imgpro-domain-pending-info span {
-    display: block;
-    font-size: var(--imgpro-text-sm);
-    color: var(--imgpro-text-secondary);
-}
-
-.imgpro-domain-pending-dns {
-    padding: var(--imgpro-space-5) var(--imgpro-space-6);
-    background: var(--imgpro-bg-subtle);
-    border-top: 1px solid var(--imgpro-border);
-}
-
-.imgpro-domain-pending-dns-label {
-    display: block;
-    font-size: var(--imgpro-text-xs);
-    font-weight: 500;
-    color: var(--imgpro-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: var(--imgpro-space-3);
-}
-
-.imgpro-domain-pending-dns-record {
-    display: flex;
-    gap: var(--imgpro-space-4);
-    flex-wrap: wrap;
-}
-
-.imgpro-dns-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imgpro-space-1);
-}
-
-.imgpro-dns-item-label {
-    font-size: var(--imgpro-text-xs);
-    color: var(--imgpro-text-muted);
-}
-
-.imgpro-dns-item code {
-    padding: var(--imgpro-space-2) var(--imgpro-space-3);
-    background: var(--imgpro-bg);
-    border: 1px solid var(--imgpro-border);
-    border-radius: var(--imgpro-radius);
-    font-family: var(--imgpro-font-mono);
-    font-size: var(--imgpro-text-sm);
-    color: var(--imgpro-text);
-}
-
-@media (max-width: 600px) {
-    .imgpro-domain-pending-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--imgpro-space-3);
-    }
-
-    .imgpro-domain-pending-header .imgpro-btn {
-        width: 100%;
-    }
-
-    .imgpro-domain-pending-dns-record {
-        flex-direction: column;
-    }
-}
-
 /* Configuration Form Card */
 
 .imgpro-custom-domain-card {
@@ -2631,7 +2483,7 @@ a.imgpro-btn-primary:visited {
     border: 1px solid var(--imgpro-border);
     border-radius: var(--imgpro-radius-lg);
     box-shadow: var(--imgpro-card-shadow);
-    margin-bottom: var(--imgpro-space-6);
+    margin-bottom: var(--imgpro-space-2);
 }
 
 .imgpro-custom-domain-header {
@@ -2695,10 +2547,6 @@ a.imgpro-btn-primary:visited {
     align-items: center;
     justify-content: space-between;
     gap: var(--imgpro-space-4);
-    padding: var(--imgpro-space-4);
-    background: var(--imgpro-bg);
-    border: 1px solid var(--imgpro-border);
-    border-radius: var(--imgpro-radius);
 }
 
 .imgpro-custom-domain-info {
@@ -2738,6 +2586,52 @@ a.imgpro-btn-primary:visited {
     color: var(--imgpro-warning-600);
 }
 
+/* Custom Domain Setup (pending DNS configuration) */
+.imgpro-custom-domain-setup {
+    margin-top: var(--imgpro-space-3);
+    padding-top: var(--imgpro-space-3);
+    border-top: 1px solid var(--imgpro-border);
+}
+
+.imgpro-custom-domain-setup-label {
+    margin: 0 0 var(--imgpro-space-2);
+    font-size: var(--imgpro-text-sm);
+    color: var(--imgpro-text-secondary);
+}
+
+.imgpro-custom-domain-setup-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--imgpro-space-4);
+}
+
+.imgpro-custom-domain-mapping {
+    display: flex;
+    align-items: center;
+    gap: var(--imgpro-space-3);
+}
+
+.imgpro-custom-domain-mapping code {
+    padding: var(--imgpro-space-2) var(--imgpro-space-3);
+    background: var(--imgpro-bg-subtle);
+    border: 1px solid var(--imgpro-border);
+    border-radius: var(--imgpro-radius);
+    font-family: var(--imgpro-font-mono);
+    font-size: var(--imgpro-text-sm);
+    color: var(--imgpro-text);
+}
+
+.imgpro-custom-domain-mapping-arrow {
+    color: var(--imgpro-text-muted);
+    font-size: var(--imgpro-text-lg);
+}
+
+/* Error state for custom domain card */
+.imgpro-custom-domain-card.is-error {
+    border-color: var(--imgpro-error-200);
+}
+
 @media (max-width: 600px) {
     .imgpro-custom-domain-input-group {
         flex-direction: column;
@@ -2750,6 +2644,16 @@ a.imgpro-btn-primary:visited {
 
     .imgpro-custom-domain-info {
         justify-content: space-between;
+    }
+
+    .imgpro-custom-domain-setup-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--imgpro-space-3);
+    }
+
+    .imgpro-custom-domain-mapping {
+        flex-wrap: wrap;
     }
 }
 
@@ -3606,7 +3510,7 @@ body.imgpro-modal-open {
     border: 1px solid var(--imgpro-border);
     border-radius: var(--imgpro-radius-lg);
     box-shadow: var(--imgpro-card-shadow);
-    margin-bottom: var(--imgpro-space-6);
+    margin-bottom: var(--imgpro-space-2);
 }
 
 .imgpro-source-urls-header {

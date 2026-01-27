@@ -284,6 +284,13 @@
             handleManageSubscription($(this));
         });
 
+        // Direct checkout button (Account Card)
+        $('#imgpro-activate-subscription').off('click').on('click', function() {
+            var $btn = $(this);
+            var tierId = $btn.data('tier-id') || 'image';
+            handleCheckout($btn, tierId);
+        });
+
         // Advanced settings accordion
         initDetailsAccordion();
 
@@ -435,6 +442,8 @@
 
     /**
      * Handle checkout (Pro upgrade)
+     * Supports both simple text buttons and structured buttons with .imgpro-btn-text/.imgpro-btn-loading spans.
+     * CSS handles visibility via .is-loading class for structured buttons.
      */
     function handleCheckout($button, tierId) {
         // Prevent duplicate submissions
@@ -442,10 +451,18 @@
             return;
         }
 
-        const originalText = $button.text();
+        // Check if button has structured layout (CSS handles visibility via .is-loading class)
+        const hasStructuredLayout = $button.find('.imgpro-btn-text').length > 0;
+        const originalText = hasStructuredLayout ? null : $button.text();
+
         // Get tier from parameter, button data attribute, or default to 'image'
         const tier = tierId || $button.data('tier') || 'image';
-        $button.addClass('is-loading').prop('disabled', true).text(imgproCdnAdmin.i18n.creatingCheckout);
+
+        // Add loading state - CSS handles visibility for structured buttons
+        $button.addClass('is-loading').prop('disabled', true);
+        if (!hasStructuredLayout) {
+            $button.text(imgproCdnAdmin.i18n.creatingCheckout);
+        }
 
         $.ajax({
             url: imgproCdnAdmin.ajaxUrl,
@@ -471,7 +488,11 @@
                         }, response.data.message ? 1500 : 0);
                     }
                 } else {
-                    $button.removeClass('is-loading').prop('disabled', false).text(originalText);
+                    // Reset button state
+                    $button.removeClass('is-loading').prop('disabled', false);
+                    if (!hasStructuredLayout) {
+                        $button.text(originalText);
+                    }
                     // Account exists - show verification modal (email already sent)
                     if (response.data.show_recovery) {
                         showRecoveryVerificationModal(response.data.email_hint, tier);
@@ -481,7 +502,11 @@
                 }
             },
             error: function(xhr, status) {
-                $button.removeClass('is-loading').prop('disabled', false).text(originalText);
+                // Reset button state
+                $button.removeClass('is-loading').prop('disabled', false);
+                if (!hasStructuredLayout) {
+                    $button.text(originalText);
+                }
                 var message = status === 'timeout' ? imgproCdnAdmin.i18n.timeoutError : imgproCdnAdmin.i18n.genericError;
                 showNotice('error', message);
             }
@@ -1670,29 +1695,6 @@
         if (cacheHitRate != null) {
             $('#imgpro-stat-cache-hit-rate').text(Math.round(cacheHitRate * 100) + '%');
         }
-
-        // === Bottom Row: Period Insights ===
-
-        // Total Requests This Period
-        var requestsData = data.requests || {};
-        if (requestsData.formatted) {
-            $('#imgpro-requests-total').text(requestsData.formatted);
-        } else if (requestsData.this_period != null) {
-            $('#imgpro-requests-total').text(requestsData.this_period.toLocaleString());
-        }
-
-        // Avg. Daily Requests
-        if (requestsData.avg_daily_formatted) {
-            $('#imgpro-requests-avg-daily').text(requestsData.avg_daily_formatted);
-        } else if (requestsData.avg_daily != null) {
-            $('#imgpro-requests-avg-daily').text(requestsData.avg_daily.toLocaleString());
-        }
-
-        // Days Until Reset
-        var periodData = data.period || {};
-        if (periodData.days_remaining != null) {
-            $('#imgpro-insight-days').text(periodData.days_remaining);
-        }
     }
 
     /**
@@ -1700,7 +1702,6 @@
      */
     function showInsightsEmptyState() {
         $('#imgpro-stat-total-requests, #imgpro-stat-cached, #imgpro-stat-cache-hit-rate').text('—');
-        $('#imgpro-requests-total, #imgpro-requests-avg-daily').text('—');
     }
 
     /**
