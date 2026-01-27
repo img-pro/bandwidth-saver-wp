@@ -880,6 +880,11 @@ class ImgPro_CDN_Settings {
         switch ($tier) {
             case self::TIER_IMAGE:
             case self::TIER_UNLIMITED:
+            // Legacy tiers (treated as unlimited until migrated)
+            case self::TIER_LITE:
+            case self::TIER_PRO:
+            case self::TIER_BUSINESS:
+            case self::TIER_ACTIVE:
             case self::TIER_PAST_DUE:
                 return -1; // Unlimited
             case self::TIER_FREE:
@@ -923,6 +928,11 @@ class ImgPro_CDN_Settings {
         switch ($tier) {
             case self::TIER_IMAGE:
             case self::TIER_UNLIMITED:
+            // Legacy tiers (treated as unlimited until migrated)
+            case self::TIER_LITE:
+            case self::TIER_PRO:
+            case self::TIER_BUSINESS:
+            case self::TIER_ACTIVE:
             case self::TIER_PAST_DUE:
                 return -1; // Unlimited
             case self::TIER_FREE:
