@@ -701,24 +701,7 @@ class ImgPro_CDN_Admin {
 
             $new_mode = sanitize_text_field( wp_unslash( $_GET['switch_mode'] ) );
             if (in_array($new_mode, [ImgPro_CDN_Settings::MODE_CLOUD, ImgPro_CDN_Settings::MODE_CLOUDFLARE], true)) {
-                $old_mode = $settings['setup_mode'] ?? '';
-                $was_enabled = $settings['enabled'] ?? false;
-                $new_mode_is_valid = ImgPro_CDN_Settings::is_mode_valid($new_mode, $settings);
-
                 $settings['setup_mode'] = $new_mode;
-
-                if ($new_mode_is_valid) {
-                    if (!empty($settings['previously_enabled'])) {
-                        $settings['enabled'] = true;
-                        $settings['previously_enabled'] = false;
-                    }
-                } else {
-                    if ($was_enabled) {
-                        $settings['previously_enabled'] = true;
-                    }
-                    $settings['enabled'] = false;
-                }
-
                 update_option(ImgPro_CDN_Settings::OPTION_KEY, $settings);
                 $this->settings->clear_cache();
             }
@@ -1197,7 +1180,7 @@ class ImgPro_CDN_Admin {
                     <?php settings_fields('imgpro_cdn_settings_group'); ?>
                     <input type="hidden" name="imgpro_cdn_settings[_has_enabled_field]" value="1">
                     <input type="hidden" name="imgpro_cdn_settings[setup_mode]" value="<?php echo esc_attr(ImgPro_CDN_Settings::MODE_CLOUD); ?>">
-                    <input type="hidden" name="imgpro_cdn_settings[enabled]" value="<?php echo esc_attr( $settings['enabled'] ? '1' : '0' ); ?>">
+                    <input type="hidden" name="imgpro_cdn_settings[cloud_enabled]" value="<?php echo esc_attr( !empty($settings['cloud_enabled']) ? '1' : '0' ); ?>">
                     <input type="hidden" name="imgpro_cdn_settings[cdn_url]" value="<?php echo esc_attr($settings['cdn_url']); ?>">
 
                     <div class="imgpro-card-header">
@@ -1405,7 +1388,7 @@ class ImgPro_CDN_Admin {
                             <?php settings_fields('imgpro_cdn_settings_group'); ?>
                             <input type="hidden" name="imgpro_cdn_settings[_has_enabled_field]" value="1">
                             <input type="hidden" name="imgpro_cdn_settings[setup_mode]" value="<?php echo esc_attr(ImgPro_CDN_Settings::MODE_CLOUDFLARE); ?>">
-                            <input type="hidden" name="imgpro_cdn_settings[enabled]" value="<?php echo esc_attr( $settings['enabled'] ? '1' : '0' ); ?>">
+                            <input type="hidden" name="imgpro_cdn_settings[cloudflare_enabled]" value="<?php echo esc_attr( !empty($settings['cloudflare_enabled']) ? '1' : '0' ); ?>">
                             <input type="hidden" name="imgpro_cdn_settings[cdn_url]" value="<?php echo esc_attr($settings['cdn_url']); ?>">
 
                             <div class="imgpro-card-header">

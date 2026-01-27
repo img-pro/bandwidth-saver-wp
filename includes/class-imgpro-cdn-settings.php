@@ -80,6 +80,21 @@ class ImgPro_CDN_Settings {
     const TIER_UNLIMITED = 'unlimited';
 
     /**
+     * Legacy subscription tiers (kept for backward compatibility)
+     *
+     * These tiers existed in earlier versions. Users who haven't synced
+     * their account may still have these values stored. The API will
+     * migrate them to TIER_IMAGE on next sync.
+     *
+     * @since 1.1.2
+     * @var string
+     */
+    const TIER_LITE = 'lite';
+    const TIER_PRO = 'pro';
+    const TIER_BUSINESS = 'business';
+    const TIER_ACTIVE = 'active';
+
+    /**
      * Subscription tier: Cancelled
      *
      * @since 0.1.2
@@ -114,6 +129,12 @@ class ImgPro_CDN_Settings {
         self::TIER_FREE,
         self::TIER_IMAGE,
         self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Inactive states
         self::TIER_CANCELLED,
         self::TIER_PAST_DUE,
         self::TIER_SUSPENDED,
@@ -129,6 +150,12 @@ class ImgPro_CDN_Settings {
         self::TIER_FREE,
         self::TIER_IMAGE,
         self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Grace period
         self::TIER_PAST_DUE,
     ];
 
@@ -141,6 +168,12 @@ class ImgPro_CDN_Settings {
     const PAID_TIERS = [
         self::TIER_IMAGE,
         self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Grace period
         self::TIER_PAST_DUE,
     ];
 

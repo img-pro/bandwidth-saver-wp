@@ -2554,6 +2554,16 @@ a.imgpro-btn-primary:visited {
     color: var(--imgpro-warning-600);
 }
 
+.imgpro-domain-badge-ssl {
+    background: var(--imgpro-primary-100);
+    color: var(--imgpro-primary-700);
+}
+
+.imgpro-domain-badge-error {
+    background: var(--imgpro-error-100);
+    color: var(--imgpro-error-600);
+}
+
 /* Custom Domain Setup (pending DNS configuration) */
 .imgpro-custom-domain-setup {
     margin-top: var(--imgpro-space-3);
