@@ -1221,7 +1221,7 @@ class ImgPro_CDN_Admin {
             <div class="imgpro-account-card__main">
                 <div class="imgpro-account-card__content">
                     <?php if ($is_paid): ?>
-                        <strong class="imgpro-account-card__headline"><?php esc_html_e('Unlimited', 'bandwidth-saver'); ?></strong>
+                        <strong class="imgpro-account-card__headline"><?php esc_html_e('Bandwidth Saver Unlimited', 'bandwidth-saver'); ?></strong>
                         <span class="imgpro-account-card__description"><?php esc_html_e('Custom domain, unlimited origins, and priority support.', 'bandwidth-saver'); ?></span>
                     <?php else: ?>
                         <strong class="imgpro-account-card__headline"><?php esc_html_e('Go Unlimited for $9.99/mo', 'bandwidth-saver'); ?></strong>
