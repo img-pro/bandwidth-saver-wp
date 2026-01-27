@@ -1166,9 +1166,11 @@ class ImgPro_CDN_Admin {
             <?php // 1. CDN Toggle ?>
             <?php $this->render_toggle_card($settings, ImgPro_CDN_Settings::MODE_CLOUD); ?>
 
+            <?php if (!$is_paid): ?>
             <p class="imgpro-safety-note">
                 <?php esc_html_e('Your original files stay on your server. Turning the CDN off or deactivating the plugin will not break your site — URLs simply return to normal.', 'bandwidth-saver'); ?>
             </p>
+            <?php endif; ?>
 
             <?php // 2. Usage Chart (always shown) ?>
             <?php $this->render_chart($settings); ?>
