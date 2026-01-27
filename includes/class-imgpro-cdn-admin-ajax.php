@@ -844,6 +844,11 @@ class ImgPro_CDN_Admin_Ajax {
                 ImgPro_CDN_Settings::TIER_FREE      => 1,
                 ImgPro_CDN_Settings::TIER_IMAGE     => 2,
                 ImgPro_CDN_Settings::TIER_UNLIMITED => 2,
+                // Legacy tiers (all were paid)
+                ImgPro_CDN_Settings::TIER_LITE      => 2,
+                ImgPro_CDN_Settings::TIER_PRO       => 2,
+                ImgPro_CDN_Settings::TIER_BUSINESS   => 2,
+                ImgPro_CDN_Settings::TIER_ACTIVE    => 2,
             ];
 
             $current_priority = $tier_priority[$current_tier_id] ?? 0;

@@ -560,23 +560,10 @@ class ImgPro_CDN_Admin {
         $validated = $this->settings->validate($input);
         $merged = array_merge($existing, $validated);
 
-        // Handle unchecked checkboxes
+        // Handle unchecked checkboxes (checkbox values are absent when unchecked)
         if (isset($input['_has_enabled_field'])) {
-            if (!isset($input['enabled'])) {
-                $merged['enabled'] = false;
-            }
             if (!isset($input['debug_mode'])) {
                 $merged['debug_mode'] = false;
-            }
-        }
-
-        // Auto-disable if mode not valid
-        $enabled_field_submitted = isset($input['_has_enabled_field']);
-        $mode_is_changing = isset($input['setup_mode']) && ($input['setup_mode'] !== ($existing['setup_mode'] ?? ''));
-
-        if ($enabled_field_submitted || $mode_is_changing) {
-            if (!ImgPro_CDN_Settings::is_mode_valid($merged['setup_mode'] ?? '', $merged)) {
-                $merged['enabled'] = false;
             }
         }
 
