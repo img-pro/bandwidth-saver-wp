@@ -896,9 +896,8 @@ class ImgPro_CDN_Admin {
      * @param array $settings Plugin settings.
      * @return void
      */
-    private function render_stats_grid($settings) {
+    private function render_chart($settings) {
         ?>
-
         <!-- Usage Chart -->
         <div class="imgpro-chart-card" id="imgpro-analytics-section">
             <div class="imgpro-chart-header">
@@ -934,7 +933,18 @@ class ImgPro_CDN_Admin {
                 </div>
             </div>
         </div>
+        <?php
+    }
 
+    /**
+     * Render quick stats grid
+     *
+     * @since 0.1.0
+     * @param array $settings Plugin settings.
+     * @return void
+     */
+    private function render_stats_grid($settings) {
+        ?>
         <!-- Quick Stats Grid -->
         <div class="imgpro-stats-grid" id="imgpro-stats-grid">
             <div class="imgpro-stat-card">
@@ -1147,6 +1157,7 @@ class ImgPro_CDN_Admin {
      */
     private function render_cloud_settings($settings) {
         $email = $settings['cloud_email'] ?? '';
+        $is_paid = ImgPro_CDN_Settings::is_paid($settings);
         ?>
         <div class="imgpro-cloud-dashboard">
             <?php // Subscription Alerts ?>
@@ -1159,17 +1170,26 @@ class ImgPro_CDN_Admin {
                 <?php esc_html_e('Your original files stay on your server. Turning the CDN off or deactivating the plugin will not break your site — URLs simply return to normal.', 'bandwidth-saver'); ?>
             </p>
 
-            <?php // 2. Stats Grid ?>
-            <?php $this->render_stats_grid($settings); ?>
+            <?php // 2. Usage Chart (always shown) ?>
+            <?php $this->render_chart($settings); ?>
 
-            <?php // 3. Account Card ?>
+            <?php // 3. Stats Grid (paid only) ?>
+            <?php if ($is_paid): ?>
+                <?php $this->render_stats_grid($settings); ?>
+            <?php endif; ?>
+
+            <?php // 4. Custom Domain Section (paid only) ?>
+            <?php if ($is_paid): ?>
+                <?php $this->render_custom_domain_section($settings); ?>
+            <?php endif; ?>
+
+            <?php // 5. Source URLs Section (paid only) ?>
+            <?php if ($is_paid): ?>
+                <?php $this->render_source_urls_section($settings); ?>
+            <?php endif; ?>
+
+            <?php // 6. Account Card (always shown, at bottom) ?>
             <?php $this->render_account_card($settings, $email); ?>
-
-            <?php // 4. Custom Domain Section (includes pending/error instructions inline) ?>
-            <?php $this->render_custom_domain_section($settings); ?>
-
-            <?php // 5. Source URLs Section ?>
-            <?php $this->render_source_urls_section($settings); ?>
 
             <?php // 5. Developer Options (only shown when WP_DEBUG is enabled) ?>
             <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
