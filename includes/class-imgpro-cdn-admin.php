@@ -441,7 +441,7 @@ class ImgPro_CDN_Admin {
                     'creatingCheckout' => __('Creating checkout...', 'bandwidth-saver'),
                     'creatingAccount' => __('Creating account...', 'bandwidth-saver'),
                     'recovering' => __('Recovering...', 'bandwidth-saver'),
-                    'openingPortal' => __('Opening portal...', 'bandwidth-saver'),
+                    'openingPortal' => __('Opening...', 'bandwidth-saver'),
                     'activating' => __('Activating...', 'bandwidth-saver'),
                     // Error messages
                     'checkoutError' => __('Could not create checkout. Please try again.', 'bandwidth-saver'),
@@ -1031,7 +1031,7 @@ class ImgPro_CDN_Admin {
             $icon        = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
             $title       = __( 'Subscription suspended', 'bandwidth-saver' );
             $message     = __( 'Your subscription has been suspended. Please contact support or update your payment method.', 'bandwidth-saver' );
-            $button_text = __( 'Manage Subscription', 'bandwidth-saver' );
+            $button_text = __( 'Customer Portal', 'bandwidth-saver' );
             $button_id   = 'imgpro-manage-subscription-alert';
             $alert_class = 'is-error';
         }
@@ -1222,23 +1222,23 @@ class ImgPro_CDN_Admin {
                 <div class="imgpro-account-card__content">
                     <?php if ($is_paid): ?>
                         <strong class="imgpro-account-card__headline"><?php esc_html_e('Unlimited', 'bandwidth-saver'); ?></strong>
-                        <span class="imgpro-account-card__description"><?php esc_html_e('Custom domains, unlimited origins, and priority support.', 'bandwidth-saver'); ?></span>
+                        <span class="imgpro-account-card__description"><?php esc_html_e('Custom domain, unlimited origins, and priority support.', 'bandwidth-saver'); ?></span>
                     <?php else: ?>
                         <strong class="imgpro-account-card__headline"><?php esc_html_e('Go Unlimited for $9.99/mo', 'bandwidth-saver'); ?></strong>
-                        <span class="imgpro-account-card__description"><?php esc_html_e('Custom domains, unlimited origins, and priority support. Cancel anytime.', 'bandwidth-saver'); ?></span>
+                        <span class="imgpro-account-card__description"><?php esc_html_e('Custom domain, unlimited origins, and priority support. Cancel anytime.', 'bandwidth-saver'); ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="imgpro-account-card__actions">
                     <?php if ($is_paid): ?>
                         <button type="button" class="imgpro-btn imgpro-btn-secondary" id="imgpro-manage-subscription">
-                            <?php esc_html_e('Manage Subscription', 'bandwidth-saver'); ?>
+                            <?php esc_html_e('Customer Portal', 'bandwidth-saver'); ?>
                         </button>
                     <?php else: ?>
                         <button type="button" class="imgpro-btn imgpro-btn-primary" id="imgpro-activate-subscription" data-tier-id="image">
                             <span class="imgpro-btn-text"><?php esc_html_e('Go Unlimited', 'bandwidth-saver'); ?></span>
                             <span class="imgpro-btn-loading">
                                 <svg class="imgpro-spinner" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="38" stroke-linecap="round"/></svg>
-                                <?php esc_html_e('Redirecting...', 'bandwidth-saver'); ?>
+                                <?php esc_html_e('Checkout', 'bandwidth-saver'); ?>
                             </span>
                             <svg class="imgpro-btn-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.333 8h9.334M8 3.333L12.667 8 8 12.667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>

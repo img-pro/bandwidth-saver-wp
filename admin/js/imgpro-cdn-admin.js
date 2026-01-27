@@ -1183,7 +1183,7 @@
             var isPaid = $section.data('is-paid');
 
             // Set link text and action based on payment status
-            var linkText = isPaid ? 'Manage Subscription' : 'Activate Subscription';
+            var linkText = isPaid ? 'Customer Portal' : 'Activate Subscription';
             var action = isPaid ? 'manage' : 'activate';
 
             $upgradeLink.attr('data-action', action).find('strong').text(linkText);
