@@ -2086,12 +2086,6 @@ a.imgpro-btn-primary:visited {
     color: var(--imgpro-text-muted);
 }
 
-/* Price display in footer */
-.imgpro-account-card__price {
-    font-weight: 500;
-    color: var(--imgpro-text-secondary);
-}
-
 /* Responsive */
 @media (max-width: 600px) {
     .imgpro-account-card__main {
