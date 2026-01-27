@@ -77,7 +77,7 @@ class ImgPro_CDN_Onboarding {
 
         // For step 1: only show if no existing subscription
         $tier = $all_settings['cloud_tier'] ?? '';
-        if (in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
+        if (in_array($tier, ImgPro_CDN_Settings::ACTIVE_TIERS, true)) {
             return false;
         }
 

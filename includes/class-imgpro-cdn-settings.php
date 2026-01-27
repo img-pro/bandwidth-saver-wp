@@ -60,30 +60,6 @@ class ImgPro_CDN_Settings {
     const TIER_FREE = 'free';
 
     /**
-     * Subscription tier: Lite (paid)
-     *
-     * @since 0.1.7
-     * @var string
-     */
-    const TIER_LITE = 'lite';
-
-    /**
-     * Subscription tier: Pro (paid)
-     *
-     * @since 0.1.7
-     * @var string
-     */
-    const TIER_PRO = 'pro';
-
-    /**
-     * Subscription tier: Business (paid, legacy)
-     *
-     * @since 0.1.7
-     * @var string
-     */
-    const TIER_BUSINESS = 'business';
-
-    /**
      * Subscription tier: Image (paid, $9.99/mo)
      *
      * The main paid tier for Image CDN with unlimited bandwidth.
@@ -104,11 +80,18 @@ class ImgPro_CDN_Settings {
     const TIER_UNLIMITED = 'unlimited';
 
     /**
-     * Subscription tier: Active (legacy, maps to pro)
+     * Legacy subscription tiers (kept for backward compatibility)
      *
-     * @since 0.1.2
+     * These tiers existed in earlier versions. Users who haven't synced
+     * their account may still have these values stored. The API will
+     * migrate them to TIER_IMAGE on next sync.
+     *
+     * @since 1.1.2
      * @var string
      */
+    const TIER_LITE = 'lite';
+    const TIER_PRO = 'pro';
+    const TIER_BUSINESS = 'business';
     const TIER_ACTIVE = 'active';
 
     /**
@@ -136,6 +119,76 @@ class ImgPro_CDN_Settings {
     const TIER_SUSPENDED = 'suspended';
 
     /**
+     * All valid subscription tiers (for validation)
+     *
+     * @since 1.1.2
+     * @var array
+     */
+    const VALID_TIERS = [
+        self::TIER_NONE,
+        self::TIER_FREE,
+        self::TIER_IMAGE,
+        self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Inactive states
+        self::TIER_CANCELLED,
+        self::TIER_PAST_DUE,
+        self::TIER_SUSPENDED,
+    ];
+
+    /**
+     * Tiers that have an active subscription (configured and can use CDN)
+     *
+     * @since 1.1.2
+     * @var array
+     */
+    const ACTIVE_TIERS = [
+        self::TIER_FREE,
+        self::TIER_IMAGE,
+        self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Grace period
+        self::TIER_PAST_DUE,
+    ];
+
+    /**
+     * Paid subscription tiers (including grace period)
+     *
+     * @since 1.1.2
+     * @var array
+     */
+    const PAID_TIERS = [
+        self::TIER_IMAGE,
+        self::TIER_UNLIMITED,
+        // Legacy tiers (backward compatibility)
+        self::TIER_LITE,
+        self::TIER_PRO,
+        self::TIER_BUSINESS,
+        self::TIER_ACTIVE,
+        // Grace period
+        self::TIER_PAST_DUE,
+    ];
+
+    /**
+     * Inactive subscription tiers (cancelled or suspended)
+     *
+     * @since 1.1.2
+     * @var array
+     */
+    const INACTIVE_TIERS = [
+        self::TIER_CANCELLED,
+        self::TIER_SUSPENDED,
+    ];
+
+    /**
      * Free tier cache limit in bytes (5 GB)
      *
      * Cache is auto-managed via LRU eviction.
@@ -146,30 +199,6 @@ class ImgPro_CDN_Settings {
     const FREE_CACHE_LIMIT = 5368709120;
 
     /**
-     * Lite tier cache limit in bytes (25 GB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const LITE_CACHE_LIMIT = 26843545600;
-
-    /**
-     * Pro tier cache limit in bytes (150 GB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const PRO_CACHE_LIMIT = 161061273600;
-
-    /**
-     * Business tier cache limit in bytes (1 TB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const BUSINESS_CACHE_LIMIT = 1099511627776;
-
-    /**
      * Free tier bandwidth limit in bytes (100 GB)
      *
      * Bandwidth is the primary metric, resets monthly.
@@ -178,30 +207,6 @@ class ImgPro_CDN_Settings {
      * @var int
      */
     const FREE_BANDWIDTH_LIMIT = 107374182400;
-
-    /**
-     * Lite tier bandwidth limit in bytes (250 GB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const LITE_BANDWIDTH_LIMIT = 268435456000;
-
-    /**
-     * Pro tier bandwidth limit in bytes (2 TB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const PRO_BANDWIDTH_LIMIT = 2199023255552;
-
-    /**
-     * Business tier bandwidth limit in bytes (10 TB)
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const BUSINESS_BANDWIDTH_LIMIT = 10995116277760;
 
     /**
      * API base URL for cloud services
@@ -238,9 +243,6 @@ class ImgPro_CDN_Settings {
      * @var array
      */
     private $defaults = [
-        // Legacy single enabled flag (kept for backwards compatibility)
-        'enabled'            => false,
-        'previously_enabled' => false,
         'setup_mode'         => '',
 
         // Per-mode enabled states (independent toggles)
@@ -274,7 +276,6 @@ class ImgPro_CDN_Settings {
         'cdn_url'         => '',
 
         // Common settings
-        'allowed_domains' => [],  // Deprecated - kept for backward compatibility
         'source_urls'     => [],  // Source URLs (origin domains) synced from API
         'debug_mode'      => false,
     ];
@@ -378,22 +379,12 @@ class ImgPro_CDN_Settings {
             }
         }
 
-        // Enabled (boolean) - legacy, kept for backwards compatibility
-        if (isset($settings['enabled'])) {
-            $validated['enabled'] = (bool) $settings['enabled'];
-        }
-
         // Per-mode enabled states (boolean)
         if (isset($settings['cloud_enabled'])) {
             $validated['cloud_enabled'] = (bool) $settings['cloud_enabled'];
         }
         if (isset($settings['cloudflare_enabled'])) {
             $validated['cloudflare_enabled'] = (bool) $settings['cloudflare_enabled'];
-        }
-
-        // Previously enabled (boolean) - legacy, kept for backwards compatibility
-        if (isset($settings['previously_enabled'])) {
-            $validated['previously_enabled'] = (bool) $settings['previously_enabled'];
         }
 
         // Cloud-specific fields
@@ -411,7 +402,7 @@ class ImgPro_CDN_Settings {
         }
         if (isset($settings['cloud_tier'])) {
             $tier = sanitize_text_field($settings['cloud_tier']);
-            if (in_array($tier, [self::TIER_NONE, self::TIER_FREE, self::TIER_IMAGE, self::TIER_LITE, self::TIER_PRO, self::TIER_BUSINESS, self::TIER_UNLIMITED, self::TIER_ACTIVE, self::TIER_CANCELLED, self::TIER_PAST_DUE, self::TIER_SUSPENDED], true)) {
+            if (in_array($tier, self::VALID_TIERS, true)) {
                 $validated['cloud_tier'] = $tier;
             }
         }
@@ -475,20 +466,6 @@ class ImgPro_CDN_Settings {
                 $cdn_url = '';
             }
             $validated['cdn_url'] = $cdn_url;
-        }
-
-        // Allowed domains (array) - deprecated, kept for backward compatibility
-        if (isset($settings['allowed_domains'])) {
-            if (is_string($settings['allowed_domains'])) {
-                $domains = array_map('trim', explode("\n", $settings['allowed_domains']));
-            } else {
-                $domains = (array) $settings['allowed_domains'];
-            }
-
-            $validated['allowed_domains'] = array_map(
-                [self::class, 'sanitize_domain'],
-                array_filter($domains)
-            );
         }
 
         // Source URLs (array) - synced from API, used by rewriter
@@ -748,8 +725,7 @@ class ImgPro_CDN_Settings {
     public static function is_mode_valid($mode, $settings) {
         if (self::MODE_CLOUD === $mode) {
             $tier = $settings['cloud_tier'] ?? '';
-            // Valid tiers: free (trial), image, unlimited, lite, pro, business (legacy), active (legacy), past_due (grace period)
-            return in_array($tier, [self::TIER_FREE, self::TIER_IMAGE, self::TIER_UNLIMITED, self::TIER_LITE, self::TIER_PRO, self::TIER_BUSINESS, self::TIER_ACTIVE, self::TIER_PAST_DUE], true);
+            return in_array($tier, self::ACTIVE_TIERS, true);
         } elseif (self::MODE_CLOUDFLARE === $mode) {
             return !empty($settings['cdn_url']);
         }
@@ -794,7 +770,7 @@ class ImgPro_CDN_Settings {
     }
 
     /**
-     * Check if user has any paid subscription (image, unlimited, or legacy tiers)
+     * Check if user has any paid subscription
      *
      * @since 0.1.7
      * @param array $settings The settings array to check against.
@@ -802,10 +778,7 @@ class ImgPro_CDN_Settings {
      */
     public static function is_paid($settings) {
         $tier = $settings['cloud_tier'] ?? '';
-        // past_due still counts as paid (grace period)
-        // image is the primary paid tier for Image CDN, unlimited for Unlimited CDN
-        // legacy tiers (lite, pro, business) still supported
-        return in_array($tier, [self::TIER_IMAGE, self::TIER_UNLIMITED, self::TIER_LITE, self::TIER_PRO, self::TIER_BUSINESS, self::TIER_ACTIVE, self::TIER_PAST_DUE], true);
+        return in_array($tier, self::PAID_TIERS, true);
     }
 
     /**
@@ -878,7 +851,7 @@ class ImgPro_CDN_Settings {
      */
     public static function is_subscription_inactive($settings) {
         $tier = $settings['cloud_tier'] ?? '';
-        return in_array($tier, [self::TIER_CANCELLED, self::TIER_SUSPENDED], true);
+        return in_array($tier, self::INACTIVE_TIERS, true);
     }
 
     /**
@@ -907,15 +880,13 @@ class ImgPro_CDN_Settings {
         switch ($tier) {
             case self::TIER_IMAGE:
             case self::TIER_UNLIMITED:
-                return -1; // Unlimited
-            case self::TIER_BUSINESS:
-                return self::BUSINESS_BANDWIDTH_LIMIT;
+            // Legacy tiers (treated as unlimited until migrated)
+            case self::TIER_LITE:
             case self::TIER_PRO:
+            case self::TIER_BUSINESS:
             case self::TIER_ACTIVE:
             case self::TIER_PAST_DUE:
-                return self::PRO_BANDWIDTH_LIMIT;
-            case self::TIER_LITE:
-                return self::LITE_BANDWIDTH_LIMIT;
+                return -1; // Unlimited
             case self::TIER_FREE:
                 return self::FREE_BANDWIDTH_LIMIT;
             default:
@@ -957,15 +928,13 @@ class ImgPro_CDN_Settings {
         switch ($tier) {
             case self::TIER_IMAGE:
             case self::TIER_UNLIMITED:
-                return -1; // Unlimited
-            case self::TIER_BUSINESS:
-                return self::BUSINESS_CACHE_LIMIT;
+            // Legacy tiers (treated as unlimited until migrated)
+            case self::TIER_LITE:
             case self::TIER_PRO:
+            case self::TIER_BUSINESS:
             case self::TIER_ACTIVE:
             case self::TIER_PAST_DUE:
-                return self::PRO_CACHE_LIMIT;
-            case self::TIER_LITE:
-                return self::LITE_CACHE_LIMIT;
+                return -1; // Unlimited
             case self::TIER_FREE:
                 return self::FREE_CACHE_LIMIT;
             default:

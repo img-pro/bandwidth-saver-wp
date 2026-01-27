@@ -182,7 +182,7 @@ class ImgPro_CDN_Plan_Selector {
                 <?php esc_html_e('Thank you for supporting the Image CDN. Your subscription keeps the service running.', 'bandwidth-saver'); ?>
             </p>
             <button type="button" class="imgpro-btn imgpro-btn-secondary" id="imgpro-manage-subscription">
-                <?php esc_html_e('Manage Subscription', 'bandwidth-saver'); ?>
+                <?php esc_html_e('Customer Portal', 'bandwidth-saver'); ?>
             </button>
         </div>
         <?php

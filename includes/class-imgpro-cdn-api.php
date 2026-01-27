@@ -138,12 +138,10 @@ class ImgPro_CDN_API {
             }
         }
 
-        // Set API key for Bearer token authentication (v0.2.0+)
+        // Set API key for Bearer token authentication
         $this->set_api_key($api_key);
 
-        // Fetch from API using modern endpoint
-        // v0.2.0+: GET /api/site with Bearer token
-        // Legacy: GET /api/sites/:api_key (fallback for errors)
+        // Fetch from API
         $response = $this->request('GET', '/api/site');
 
         if (is_wp_error($response)) {
@@ -209,19 +207,6 @@ class ImgPro_CDN_API {
         set_transient($cache_key, $response, $ttl);
 
         return $response;
-    }
-
-    /**
-     * Get site data with optional includes (alias for get_site_with_includes)
-     *
-     * @deprecated Use get_site_with_includes() instead
-     * @param string $api_key       Site API key.
-     * @param array  $include       Data to include.
-     * @param bool   $force_refresh Force fresh fetch.
-     * @return array|WP_Error Site data or error.
-     */
-    public function get_site_full($api_key, $include = ['domains'], $force_refresh = false) {
-        return $this->get_site_with_includes($api_key, $include, $force_refresh);
     }
 
     /**
@@ -319,13 +304,6 @@ class ImgPro_CDN_API {
         }
 
         $site = $response['site'] ?? $response;
-
-        // Check if this was a reconnection (existing account without email)
-        $reconnected = !empty($response['reconnected']);
-        if ($reconnected) {
-            $site['_reconnected'] = true;
-        }
-
         $this->cache_site($site);
 
         return $site;

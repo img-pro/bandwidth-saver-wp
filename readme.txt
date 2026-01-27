@@ -4,7 +4,7 @@ Tags: image cdn, cdn, image optimization, core web vitals, page speed
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -139,7 +139,7 @@ No. This plugin focuses on images only for simplicity and cost-effectiveness. If
 
 1. Speed up your images in 60 seconds with the Image CDN
 2. Track your CDN requests and performance
-3. Multi-site support and custom CDN domains
+3. Custom CDN domain and multi-origin support
 4. Self-host option for full control
 
 == Privacy ==

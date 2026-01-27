@@ -57,8 +57,6 @@ class ImgPro_CDN_Admin_Ajax {
         add_action('wp_ajax_imgpro_cdn_toggle_enabled', [$this, 'ajax_toggle_enabled']);
         add_action('wp_ajax_imgpro_cdn_checkout', [$this, 'ajax_checkout']);
         add_action('wp_ajax_imgpro_cdn_manage_subscription', [$this, 'ajax_manage_subscription']);
-        // REMOVED: imgpro_cdn_recover_account - deprecated since v0.1.9
-        // Use imgpro_cdn_request_recovery + imgpro_cdn_verify_recovery instead
         add_action('wp_ajax_imgpro_cdn_request_recovery', [$this, 'ajax_request_recovery']);
         add_action('wp_ajax_imgpro_cdn_verify_recovery', [$this, 'ajax_verify_recovery']);
         add_action('wp_ajax_imgpro_cdn_add_custom_domain', [$this, 'ajax_add_custom_domain']);
@@ -752,12 +750,6 @@ class ImgPro_CDN_Admin_Ajax {
         }
     }
 
-    // =========================================================================
-    // REMOVED (2024-11-30): ajax_recover_account() - deprecated since v0.1.9
-    // Was a shim that redirected to ajax_request_recovery()
-    // Clients should use ajax_request_recovery() + ajax_verify_recovery() directly
-    // =========================================================================
-
     /**
      * AJAX handler for requesting account recovery (step 1)
      *
@@ -835,7 +827,7 @@ class ImgPro_CDN_Admin_Ajax {
 
         // Enable CDN if valid subscription
         $current_tier_id = $this->api->get_tier_id($site);
-        if (in_array($current_tier_id, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE], true)) {
+        if (in_array($current_tier_id, ImgPro_CDN_Settings::ACTIVE_TIERS, true)) {
             $this->settings->update([
                 'cloud_enabled' => true,
                 'onboarding_completed' => true,
@@ -850,11 +842,13 @@ class ImgPro_CDN_Admin_Ajax {
             // Tier priority order (higher = better)
             $tier_priority = [
                 ImgPro_CDN_Settings::TIER_FREE      => 1,
+                ImgPro_CDN_Settings::TIER_IMAGE     => 2,
+                ImgPro_CDN_Settings::TIER_UNLIMITED => 2,
+                // Legacy tiers (all were paid)
                 ImgPro_CDN_Settings::TIER_LITE      => 2,
-                ImgPro_CDN_Settings::TIER_PRO       => 3,
-                ImgPro_CDN_Settings::TIER_BUSINESS  => 4,
-                ImgPro_CDN_Settings::TIER_IMAGE     => 5,
-                ImgPro_CDN_Settings::TIER_UNLIMITED => 5,
+                ImgPro_CDN_Settings::TIER_PRO       => 2,
+                ImgPro_CDN_Settings::TIER_BUSINESS   => 2,
+                ImgPro_CDN_Settings::TIER_ACTIVE    => 2,
             ];
 
             $current_priority = $tier_priority[$current_tier_id] ?? 0;
@@ -1172,15 +1166,7 @@ class ImgPro_CDN_Admin_Ajax {
             ];
 
             $tier = $settings['cloud_tier'] ?? '';
-            $tier_valid = in_array($tier, [
-                ImgPro_CDN_Settings::TIER_FREE,
-                ImgPro_CDN_Settings::TIER_IMAGE,
-                ImgPro_CDN_Settings::TIER_UNLIMITED,
-                ImgPro_CDN_Settings::TIER_LITE,
-                ImgPro_CDN_Settings::TIER_PRO,
-                ImgPro_CDN_Settings::TIER_BUSINESS,
-                ImgPro_CDN_Settings::TIER_ACTIVE,
-            ], true);
+            $tier_valid = in_array($tier, ImgPro_CDN_Settings::ACTIVE_TIERS, true);
             $health['checks']['subscription'] = [
                 'status' => $tier_valid ? 'ok' : 'error',
                 'message' => $tier_valid
@@ -1259,30 +1245,9 @@ class ImgPro_CDN_Admin_Ajax {
         // Transform insights for frontend
         $insights = $data['insights'] ?? [];
         $transformed_insights = [
-            'avg_daily_bandwidth' => isset($insights['bandwidth']['avg_daily'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['avg_daily'])
-                : null,
-            'projected_period_bandwidth' => isset($insights['bandwidth']['projected'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['projected'])
-                : null,
-            'cache_hit_rate' => isset($insights['recent']['cache_hit_rate'])
-                ? $insights['recent']['cache_hit_rate']
-                : null,
-            'cache_hits' => isset($insights['recent']['cache_hits'])
-                ? $insights['recent']['cache_hits']
-                : null,
-            'cache_misses' => isset($insights['recent']['cache_misses'])
-                ? $insights['recent']['cache_misses']
-                : null,
-            'days_remaining' => isset($insights['period']['days_remaining'])
-                ? $insights['period']['days_remaining']
-                : null,
-            'total_requests' => isset($insights['recent']['requests'])
-                ? $insights['recent']['requests']
-                : null,
-            // New request-focused fields (v1.0+)
-            'requests' => isset($insights['requests']) ? $insights['requests'] : null,
-            'period' => isset($insights['period']) ? $insights['period'] : null,
+            'cache_hit_rate' => $insights['recent']['cache_hit_rate'] ?? null,
+            'cache_hits' => $insights['recent']['cache_hits'] ?? null,
+            'total_requests' => $insights['recent']['requests'] ?? null,
         ];
 
         // Extract daily array
@@ -1326,30 +1291,9 @@ class ImgPro_CDN_Admin_Ajax {
 
         // Transform API response to match frontend expectations
         $transformed = [
-            'avg_daily_bandwidth' => isset($insights['bandwidth']['avg_daily'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['avg_daily'])
-                : null,
-            'projected_period_bandwidth' => isset($insights['bandwidth']['projected'])
-                ? ImgPro_CDN_Settings::format_bytes($insights['bandwidth']['projected'])
-                : null,
-            'cache_hit_rate' => isset($insights['recent']['cache_hit_rate'])
-                ? $insights['recent']['cache_hit_rate']
-                : null,
-            'cache_hits' => isset($insights['recent']['cache_hits'])
-                ? $insights['recent']['cache_hits']
-                : null,
-            'cache_misses' => isset($insights['recent']['cache_misses'])
-                ? $insights['recent']['cache_misses']
-                : null,
-            'days_remaining' => isset($insights['period']['days_remaining'])
-                ? $insights['period']['days_remaining']
-                : null,
-            'total_requests' => isset($insights['recent']['requests'])
-                ? $insights['recent']['requests']
-                : null,
-            // New request-focused fields (v1.0+)
-            'requests' => isset($insights['requests']) ? $insights['requests'] : null,
-            'period' => isset($insights['period']) ? $insights['period'] : null,
+            'cache_hit_rate' => $insights['recent']['cache_hit_rate'] ?? null,
+            'cache_hits' => $insights['recent']['cache_hits'] ?? null,
+            'total_requests' => $insights['recent']['requests'] ?? null,
         ];
 
         wp_send_json_success($transformed);
