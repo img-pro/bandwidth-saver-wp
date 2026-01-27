@@ -1255,7 +1255,7 @@ class ImgPro_CDN_Admin {
             <div class="imgpro-account-card__footer">
                 <?php if ($is_paid): ?>
                     <?php if (!empty($email)): ?>
-                        <strong><?php echo esc_html($email); ?></strong>
+                        <span><?php echo esc_html($email); ?></span>
                     <?php endif; ?>
                 <?php else: ?>
                     <span class="imgpro-account-card__guarantee"><?php esc_html_e('7-day money-back guarantee', 'bandwidth-saver'); ?></span>
