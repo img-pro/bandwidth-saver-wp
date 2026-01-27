@@ -29,6 +29,13 @@ ImgPro_CDN_Security::remove_capability_from_all();
 delete_option('imgpro_cdn_settings');
 delete_option('imgpro_cdn_version');
 
+// Delete batched cache key and its referenced transient
+$imgpro_batched_key = get_option('imgpro_cdn_batched_cache_key');
+if ($imgpro_batched_key) {
+    delete_transient($imgpro_batched_key);
+}
+delete_option('imgpro_cdn_batched_cache_key');
+
 // Delete known transients
 delete_transient('imgpro_cdn_pending_payment');
 delete_transient('imgpro_cdn_tiers');
@@ -69,6 +76,13 @@ if (is_multisite()) {
             // Delete options for this site
             delete_option('imgpro_cdn_settings');
             delete_option('imgpro_cdn_version');
+
+            // Delete batched cache key and its referenced transient
+            $imgpro_batched_key = get_option('imgpro_cdn_batched_cache_key');
+            if ($imgpro_batched_key) {
+                delete_transient($imgpro_batched_key);
+            }
+            delete_option('imgpro_cdn_batched_cache_key');
 
             // Delete transients for this site
             delete_transient('imgpro_cdn_pending_payment');

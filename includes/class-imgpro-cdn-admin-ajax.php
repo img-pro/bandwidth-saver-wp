@@ -1039,6 +1039,8 @@ class ImgPro_CDN_Admin_Ajax {
             $this->settings->update([
                 'custom_domain_status' => $result['status'],
             ]);
+            // Clear stale batched cache so page reload fetches the updated D1 status
+            $this->api->invalidate_cache();
         }
 
         wp_send_json_success($result);

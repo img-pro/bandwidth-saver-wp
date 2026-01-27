@@ -2538,10 +2538,12 @@ a.imgpro-btn-primary:visited {
     display: inline-flex;
     align-items: center;
     gap: var(--imgpro-space-1);
-    padding: var(--imgpro-space-1) var(--imgpro-space-2);
-    border-radius: var(--imgpro-radius-sm);
-    font-size: var(--imgpro-text-xs);
-    font-weight: 500;
+    padding: var(--imgpro-space-1) var(--imgpro-space-3);
+    border-radius: var(--imgpro-radius);
+    font-size: var(--imgpro-text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
 .imgpro-domain-badge-active {
