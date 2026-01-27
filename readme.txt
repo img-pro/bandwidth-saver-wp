@@ -139,7 +139,7 @@ No. This plugin focuses on images only for simplicity and cost-effectiveness. If
 
 1. Speed up your images in 60 seconds with the Image CDN
 2. Track your CDN requests and performance
-3. Multi-site support and custom CDN domains
+3. Custom CDN domain and multi-origin support
 4. Self-host option for full control
 
 == Privacy ==
