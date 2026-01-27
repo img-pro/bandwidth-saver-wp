@@ -206,6 +206,9 @@ class ImgPro_CDN_API {
         }
         set_transient($cache_key, $response, $ttl);
 
+        // Remember the cache key so invalidate_cache() can clear it across requests
+        update_option('imgpro_cdn_batched_cache_key', $cache_key, false);
+
         return $response;
     }
 
@@ -962,6 +965,12 @@ class ImgPro_CDN_API {
         $this->site_cache = null;
         delete_transient('imgpro_cdn_site_data');
         delete_transient('imgpro_cdn_last_sync');
+
+        // Also clear the batched endpoint cache (get_site_with_includes)
+        $batched_key = get_option('imgpro_cdn_batched_cache_key');
+        if ($batched_key) {
+            delete_transient($batched_key);
+        }
     }
 
     /**

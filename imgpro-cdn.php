@@ -3,7 +3,7 @@
  * Plugin Name: Bandwidth Saver: Image CDN
  * Plugin URI: https://github.com/img-pro/bandwidth-saver-wp
  * Description: Image CDN for WordPress. Serve images from 300+ global edge servers. Faster Core Web Vitals, better SEO. $9.99/mo.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Author: ImgPro
  * Author URI: https://img.pro
  * License: GPLv2 or later
@@ -46,7 +46,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
 
 // Define plugin constants
 if (!defined('IMGPRO_CDN_VERSION')) {
-    define('IMGPRO_CDN_VERSION', '1.1.2');
+    define('IMGPRO_CDN_VERSION', '1.1.3');
 }
 if (!defined('IMGPRO_CDN_PLUGIN_DIR')) {
     define('IMGPRO_CDN_PLUGIN_DIR', plugin_dir_path(__FILE__));
