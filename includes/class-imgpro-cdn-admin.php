@@ -142,7 +142,7 @@ class ImgPro_CDN_Admin {
 
         // Sync account from cloud using stored API key
         $settings = $this->settings->get_all();
-        $api_key = $settings['cloud_api_key'] ?? '';
+        $api_key = $this->settings->get_api_key();
 
         if (empty($api_key)) {
             // No API key - can't sync, set transient to retry
@@ -285,7 +285,7 @@ class ImgPro_CDN_Admin {
      */
     private function sync_site_data() {
         $settings = $this->settings->get_all();
-        $api_key = $settings['cloud_api_key'] ?? '';
+        $api_key = $this->settings->get_api_key();
 
         if (empty($api_key)) {
             return; // No account to sync
