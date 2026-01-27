@@ -1249,9 +1249,7 @@ class ImgPro_CDN_Admin {
                 <?php if ($is_paid): ?>
                     <?php if (!empty($email)): ?>
                         <strong><?php echo esc_html($email); ?></strong>
-                        <span class="imgpro-separator">·</span>
                     <?php endif; ?>
-                    <span><?php esc_html_e('$9.99/mo', 'bandwidth-saver'); ?></span>
                 <?php else: ?>
                     <span class="imgpro-account-card__guarantee"><?php esc_html_e('7-day money-back guarantee', 'bandwidth-saver'); ?></span>
                 <?php endif; ?>

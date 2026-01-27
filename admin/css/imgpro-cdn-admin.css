@@ -648,13 +648,6 @@ a.imgpro-btn-primary:visited {
     border-top: 1px solid var(--imgpro-border);
 }
 
-/* Footer separator */
-.imgpro-card__separator,
-.imgpro-separator {
-    color: var(--imgpro-gray-400);
-    opacity: 0.6;
-}
-
 /* ==========================================================================
    Onboarding Wizard
    ========================================================================== */
