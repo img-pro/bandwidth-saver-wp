@@ -1080,8 +1080,8 @@
             var action = $(this).data('action');
 
             if (action === 'manage') {
-                // Paid: open manage subscription
-                window.open(imgproCdnAdmin.manageUrl, '_blank');
+                // Paid: open customer portal via AJAX
+                handleManageSubscription($(this));
             } else {
                 // Not paid: open plan selector modal
                 openPlanModal();

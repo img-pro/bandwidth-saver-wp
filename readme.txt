@@ -187,6 +187,12 @@ We aim to provide reliable service for legitimate WordPress image delivery. Abus
 
 == Changelog ==
 
+= 1.1.2 =
+* New: Cleaner dashboard — see only what matters for your plan
+* Fixed: Subscription not activating after checkout in some cases
+* Fixed: Compatibility with accounts created in earlier versions
+* Improved: Streamlined settings page with fewer distractions
+
 = 1.1.1 =
 * Fixed: Subscription status now updates correctly after checkout
 * Improved: Smoother activation experience
