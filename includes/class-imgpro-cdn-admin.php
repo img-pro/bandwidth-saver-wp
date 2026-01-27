@@ -1232,14 +1232,7 @@ class ImgPro_CDN_Admin {
                         ?></span>
                     <?php else: ?>
                         <strong class="imgpro-account-card__headline"><?php esc_html_e('Go Unlimited for $9.99/mo', 'bandwidth-saver'); ?></strong>
-                        <span class="imgpro-account-card__description"><?php
-                            printf(
-                                /* translators: %1$s: opening link tag, %2$s: closing link tag */
-                                esc_html__( 'Custom domain, unlimited origins, and %1$spriority support%2$s. Cancel anytime.', 'bandwidth-saver' ),
-                                '<a href="https://wordpress.org/support/plugin/bandwidth-saver/" target="_blank">',
-                                '</a>'
-                            );
-                        ?></span>
+                        <span class="imgpro-account-card__description"><?php esc_html_e('Custom domain, unlimited origins, and priority support. Cancel anytime.', 'bandwidth-saver'); ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="imgpro-account-card__actions">
