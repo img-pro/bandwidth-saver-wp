@@ -284,8 +284,6 @@
             handleManageSubscription($(this));
         });
 
-        // Legacy: Direct upgrade handler (kept for backwards compatibility, no longer used in new UI)
-
         // Advanced settings accordion
         initDetailsAccordion();
 
@@ -1645,34 +1643,6 @@
                 showInsightsEmptyState();
                 $chartLoading.hide();
                 $chartEmpty.show();
-            }
-        });
-    }
-
-    /**
-     * Load usage insights (cache hit rate, avg daily, projected, total requests)
-     * @deprecated Use loadAnalytics() instead
-     */
-    function loadInsights() {
-        $.ajax({
-            url: imgproCdnAdmin.ajaxUrl,
-            type: 'POST',
-            timeout: AJAX_TIMEOUT,
-            data: {
-                action: 'imgpro_cdn_get_insights',
-                nonce: imgproCdnAdmin.nonces.analytics
-            },
-            success: function(response) {
-                if (response.success && response.data) {
-                    updateInsights(response.data);
-                } else {
-                    // Show empty state (no data yet)
-                    showInsightsEmptyState();
-                }
-            },
-            error: function() {
-                // On error, show empty state
-                showInsightsEmptyState();
             }
         });
     }

@@ -159,9 +159,8 @@ class ImgPro_CDN_Admin {
             // Check if site has an active paid subscription
             // After payment return, we expect a paid tier - if still 'free', webhook may be pending
             $tier_id = $this->api->get_tier_id($site);
-            $paid_tiers = [ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE];
 
-            if (in_array($tier_id, $paid_tiers, true)) {
+            if (in_array($tier_id, ImgPro_CDN_Settings::PAID_TIERS, true)) {
                 // Paid tier confirmed - enable CDN
                 $this->settings->update([
                     'cloud_enabled' => true,
@@ -294,7 +293,7 @@ class ImgPro_CDN_Admin {
 
         // Use batched endpoint for efficiency (v0.2.2+)
         // This fetches site + domains + tiers + usage in one request
-        $response = $this->api->get_site_full($api_key, ['domains', 'tiers', 'usage']);
+        $response = $this->api->get_site_with_includes($api_key, ['domains', 'tiers', 'usage']);
 
         if (is_wp_error($response)) {
             return; // Silently fail - cached data will be used
@@ -1195,7 +1194,7 @@ class ImgPro_CDN_Admin {
      */
     private function render_cloud_tab($settings) {
         $tier = $settings['cloud_tier'] ?? ImgPro_CDN_Settings::TIER_NONE;
-        $has_subscription = in_array($tier, [ImgPro_CDN_Settings::TIER_FREE, ImgPro_CDN_Settings::TIER_IMAGE, ImgPro_CDN_Settings::TIER_UNLIMITED, ImgPro_CDN_Settings::TIER_LITE, ImgPro_CDN_Settings::TIER_PRO, ImgPro_CDN_Settings::TIER_BUSINESS, ImgPro_CDN_Settings::TIER_ACTIVE, ImgPro_CDN_Settings::TIER_PAST_DUE], true);
+        $has_subscription = in_array($tier, ImgPro_CDN_Settings::ACTIVE_TIERS, true);
         ?>
         <div class="imgpro-tab-panel" role="tabpanel">
             <?php if (!$has_subscription): ?>
