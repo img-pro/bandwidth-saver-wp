@@ -430,13 +430,13 @@ class ImgPro_CDN_Admin {
                     'inactiveLabel' => __('CDN Off', 'bandwidth-saver'),
                     'activeMessage' => sprintf(
                         /* translators: 1: opening span tag, 2: closing span tag, 3: opening span tag, 4: closing span tag */
-                        __('%1$sYour media is loading faster.%2$s %3$sVisitors get a better experience.%4$s', 'bandwidth-saver'),
+                        __('%1$sYour images are loading faster.%2$s %3$sVisitors get a better experience.%4$s', 'bandwidth-saver'),
                         '<span class="imgpro-cdn-nowrap imgpro-cdn-hide-mobile">',
                         '</span>',
                         '<span class="imgpro-cdn-nowrap">',
                         '</span>'
                     ),
-                    'disabledMessage' => __('Turn on to speed up your media', 'bandwidth-saver'),
+                    'disabledMessage' => __('Turn on to speed up your images', 'bandwidth-saver'),
                     // Button states
                     'creatingCheckout' => __('Creating checkout...', 'bandwidth-saver'),
                     'creatingAccount' => __('Creating account...', 'bandwidth-saver'),
@@ -464,15 +464,15 @@ class ImgPro_CDN_Admin {
                     'verificationFailed' => __('Verification failed. Please check your code and try again.', 'bandwidth-saver'),
                     'accountRecovered' => __('Account recovered!', 'bandwidth-saver'),
                     // Success messages
-                    'subscriptionActivated' => __('You\'re all set! Your media will now load faster for visitors worldwide.', 'bandwidth-saver'),
+                    'subscriptionActivated' => __('You\'re all set! Your images will now load faster for visitors worldwide.', 'bandwidth-saver'),
                     'subscriptionUpgraded' => __('Subscription activated. Thank you for your support!', 'bandwidth-saver'),
-                    'accountCreated' => __('Account created! Toggle on to start speeding up your media.', 'bandwidth-saver'),
+                    'accountCreated' => __('Account created! Toggle on to start speeding up your images.', 'bandwidth-saver'),
                     'checkoutCancelled' => __('Checkout cancelled. You can try again anytime.', 'bandwidth-saver'),
                     // Toggle UI text
-                    'cdnActiveHeading' => __('Your media is loading faster', 'bandwidth-saver'),
+                    'cdnActiveHeading' => __('Your images are loading faster', 'bandwidth-saver'),
                     'cdnInactiveHeading' => __('Image CDN is Off', 'bandwidth-saver'),
                     'cdnActiveDesc' => __('Visitors worldwide are getting faster page loads.', 'bandwidth-saver'),
-                    'cdnInactiveDesc' => __('Turn on to speed up your media.', 'bandwidth-saver'),
+                    'cdnInactiveDesc' => __('Turn on to speed up your images.', 'bandwidth-saver'),
                     // Custom domain
                     'addingDomain' => __('Adding domain...', 'bandwidth-saver'),
                     'checkingStatus' => __('Checking...', 'bandwidth-saver'),
@@ -480,7 +480,7 @@ class ImgPro_CDN_Admin {
                     'domainAdded' => __('Domain added. Configure your DNS to complete setup.', 'bandwidth-saver'),
                     'domainRemoved' => __('Custom domain removed.', 'bandwidth-saver'),
                     'domainActive' => __('Custom domain is active.', 'bandwidth-saver'),
-                    'confirmRemoveDomain' => __('Remove this custom domain? Media will be served from the default domain.', 'bandwidth-saver'),
+                    'confirmRemoveDomain' => __('Remove this custom domain? Images will be served from the default domain.', 'bandwidth-saver'),
                     'confirmRemoveCdnDomain' => __('Remove this CDN domain? The Image CDN will be disabled.', 'bandwidth-saver'),
                     'cdnDomainRemoved' => __('CDN domain removed.', 'bandwidth-saver'),
                     // Upgrade prompts
@@ -599,9 +599,9 @@ class ImgPro_CDN_Admin {
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/><path d="M6 10l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <p><strong>
                     <?php if ($is_free): ?>
-                        <?php esc_html_e('Account activated. Your media now loads from the global edge network.', 'bandwidth-saver'); ?>
+                        <?php esc_html_e('Account activated. Your images now load from the global edge network.', 'bandwidth-saver'); ?>
                     <?php else: ?>
-                        <?php esc_html_e('Subscription activated. Your media now loads from the global edge network.', 'bandwidth-saver'); ?>
+                        <?php esc_html_e('Subscription activated. Your images now load from the global edge network.', 'bandwidth-saver'); ?>
                     <?php endif; ?>
                 </strong></p>
             </div>
@@ -1418,7 +1418,7 @@ class ImgPro_CDN_Admin {
             <div class="imgpro-source-urls-header">
                 <h4><?php esc_html_e('Source URLs', 'bandwidth-saver'); ?></h4>
                 <p class="imgpro-source-urls-description">
-                    <?php esc_html_e('Domains where your media is hosted. The CDN will proxy media from these origins.', 'bandwidth-saver'); ?>
+                    <?php esc_html_e('Domains where your images are hosted. The CDN will proxy images from these origins.', 'bandwidth-saver'); ?>
                 </p>
             </div>
 

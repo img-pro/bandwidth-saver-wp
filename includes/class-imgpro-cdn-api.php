@@ -451,7 +451,7 @@ class ImgPro_CDN_API {
      * Add source URL (origin domain)
      *
      * Adds a new allowed source domain for this site.
-     * Subject to tier limits (Free: 1, Lite: 3, Pro: 5, Business: 10).
+     * Limits are enforced server-side.
      *
      * @since 0.2.0
      * @param string $api_key Site API key.
@@ -1135,11 +1135,11 @@ class ImgPro_CDN_API {
      * @return array Formatted pricing.
      */
     private function format_pricing($price) {
-        $amount = $price['formatted'] ?? '$14.99';
+        $amount = $price['formatted'] ?? '$9.99';
         $period = $price['period'] ?? '/mo';
 
         return [
-            'amount'    => $price['cents'] ?? 1499,
+            'amount'    => $price['cents'] ?? 999,
             'currency'  => 'USD',
             'interval'  => 'month',
             'formatted' => [
