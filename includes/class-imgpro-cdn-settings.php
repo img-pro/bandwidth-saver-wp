@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 /**
  * Settings management class
  *
- * Handles storage, retrieval, validation, and sanitization of plugin settings.
+ * Handles storage, retrieval and validation of plugin settings.
  *
  * @since 0.1.0
  */
@@ -28,213 +28,44 @@ class ImgPro_CDN_Settings {
     const OPTION_KEY = 'imgpro_cdn_settings';
 
     /**
-     * Setup mode: Cloud (Managed)
+     * Sync is running normally
      *
-     * @since 0.1.2
+     * @since 2.0.0
      * @var string
      */
-    const MODE_CLOUD = 'cloud';
+    const PAUSE_NONE = '';
 
     /**
-     * Setup mode: Cloudflare (Self-Hosted)
+     * Sync paused: the App reached its plan's image limit
      *
-     * @since 0.1.2
+     * @since 2.0.0
      * @var string
      */
-    const MODE_CLOUDFLARE = 'cloudflare';
+    const PAUSE_QUOTA = 'quota';
 
     /**
-     * Subscription tier: None (not registered)
+     * Sync paused: the API key was rejected or lacks write permission
      *
-     * @since 0.1.2
+     * @since 2.0.0
      * @var string
      */
-    const TIER_NONE = 'none';
+    const PAUSE_AUTH = 'auth';
 
     /**
-     * Subscription tier: Free
+     * Sync paused: the App is suspended or blocked by img.pro
      *
-     * @since 0.1.7
+     * @since 2.0.0
      * @var string
      */
-    const TIER_FREE = 'free';
+    const PAUSE_APP = 'app';
 
     /**
-     * Subscription tier: Image (paid, $9.99/mo)
+     * img.pro dashboard where users create Apps and API keys
      *
-     * The main paid tier for Image CDN with unlimited bandwidth.
-     *
-     * @since 1.1
+     * @since 2.0.0
      * @var string
      */
-    const TIER_IMAGE = 'image';
-
-    /**
-     * Subscription tier: Unlimited (legacy, for Unlimited CDN plugin)
-     *
-     * Kept for backward compatibility. New Image CDN users use TIER_IMAGE.
-     *
-     * @since 0.3.0
-     * @var string
-     */
-    const TIER_UNLIMITED = 'unlimited';
-
-    /**
-     * Legacy subscription tiers (kept for backward compatibility)
-     *
-     * These tiers existed in earlier versions. Users who haven't synced
-     * their account may still have these values stored. The API will
-     * migrate them to TIER_IMAGE on next sync.
-     *
-     * @since 1.1.2
-     * @var string
-     */
-    const TIER_LITE = 'lite';
-    const TIER_PRO = 'pro';
-    const TIER_BUSINESS = 'business';
-    const TIER_ACTIVE = 'active';
-
-    /**
-     * Subscription tier: Cancelled
-     *
-     * @since 0.1.2
-     * @var string
-     */
-    const TIER_CANCELLED = 'cancelled';
-
-    /**
-     * Subscription tier: Past due (payment failed, grace period)
-     *
-     * @since 0.1.7
-     * @var string
-     */
-    const TIER_PAST_DUE = 'past_due';
-
-    /**
-     * Subscription tier: Suspended (no access)
-     *
-     * @since 0.1.7
-     * @var string
-     */
-    const TIER_SUSPENDED = 'suspended';
-
-    /**
-     * All valid subscription tiers (for validation)
-     *
-     * @since 1.1.2
-     * @var array
-     */
-    const VALID_TIERS = [
-        self::TIER_NONE,
-        self::TIER_FREE,
-        self::TIER_IMAGE,
-        self::TIER_UNLIMITED,
-        // Legacy tiers (backward compatibility)
-        self::TIER_LITE,
-        self::TIER_PRO,
-        self::TIER_BUSINESS,
-        self::TIER_ACTIVE,
-        // Inactive states
-        self::TIER_CANCELLED,
-        self::TIER_PAST_DUE,
-        self::TIER_SUSPENDED,
-    ];
-
-    /**
-     * Tiers that have an active subscription (configured and can use CDN)
-     *
-     * @since 1.1.2
-     * @var array
-     */
-    const ACTIVE_TIERS = [
-        self::TIER_FREE,
-        self::TIER_IMAGE,
-        self::TIER_UNLIMITED,
-        // Legacy tiers (backward compatibility)
-        self::TIER_LITE,
-        self::TIER_PRO,
-        self::TIER_BUSINESS,
-        self::TIER_ACTIVE,
-        // Grace period
-        self::TIER_PAST_DUE,
-    ];
-
-    /**
-     * Paid subscription tiers (including grace period)
-     *
-     * @since 1.1.2
-     * @var array
-     */
-    const PAID_TIERS = [
-        self::TIER_IMAGE,
-        self::TIER_UNLIMITED,
-        // Legacy tiers (backward compatibility)
-        self::TIER_LITE,
-        self::TIER_PRO,
-        self::TIER_BUSINESS,
-        self::TIER_ACTIVE,
-        // Grace period
-        self::TIER_PAST_DUE,
-    ];
-
-    /**
-     * Inactive subscription tiers (cancelled or suspended)
-     *
-     * @since 1.1.2
-     * @var array
-     */
-    const INACTIVE_TIERS = [
-        self::TIER_CANCELLED,
-        self::TIER_SUSPENDED,
-    ];
-
-    /**
-     * Free tier cache limit in bytes (5 GB)
-     *
-     * Cache is auto-managed via LRU eviction.
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const FREE_CACHE_LIMIT = 5368709120;
-
-    /**
-     * Free tier bandwidth limit in bytes (100 GB)
-     *
-     * Bandwidth is the primary metric, resets monthly.
-     *
-     * @since 0.2.0
-     * @var int
-     */
-    const FREE_BANDWIDTH_LIMIT = 107374182400;
-
-    /**
-     * API base URL for cloud services
-     *
-     * @since 0.1.3
-     * @var string
-     */
-    const API_BASE_URL = 'https://billing.bandwidth-saver.com';
-
-    /**
-     * Default CDN domain for Cloud (Managed) mode
-     *
-     * Single-domain architecture: Worker serves images directly from R2.
-     *
-     * @since 0.1.5
-     * @var string
-     */
-    const CLOUD_CDN_DOMAIN = 'px.img.pro';
-
-    /**
-     * Custom domain CNAME target for Cloud (Managed) mode
-     *
-     * Users point their custom domain CNAME to this target.
-     *
-     * @since 0.1.6
-     * @var string
-     */
-    const CUSTOM_DOMAIN_TARGET = 'domains.img.pro';
+    const DASHBOARD_URL = 'https://img.pro/apps';
 
     /**
      * Default settings
@@ -243,41 +74,11 @@ class ImgPro_CDN_Settings {
      * @var array
      */
     private $defaults = [
-        'setup_mode'         => '',
-
-        // Per-mode enabled states (independent toggles)
-        'cloud_enabled'      => false,
-        'cloudflare_enabled' => false,
-
-        // Cloud mode settings
-        'cloud_api_key'   => '',
-        'cloud_email'     => '',
-        'cloud_tier'      => self::TIER_NONE,
-
-        // Custom domain settings (Cloud mode only)
-        'custom_domain'        => '',
-        'custom_domain_status' => '', // pending_dns, pending_ssl, active, error
-
-        // Usage stats (synced from Cloud API)
-        // Bandwidth is primary metric (monthly reset)
-        'bandwidth_used'     => 0,
-        'bandwidth_limit'    => 0,
-        'cache_limit'        => 0,
-        'cache_hits'         => 0,
-        'cache_misses'       => 0,
-        'stats_updated_at'   => 0,
-
-        // Onboarding state
-        'onboarding_completed' => false,
-        'onboarding_step'      => 1,
-        'marketing_opt_in'     => false,
-
-        // Cloudflare mode settings (single domain - worker serves images directly)
-        'cdn_url'         => '',
-
-        // Common settings
-        'source_urls'     => [],  // Source URLs (origin domains) synced from API
-        'debug_mode'      => false,
+        'api_key'      => '',    // Encrypted img.pro API key
+        'enabled'      => false, // Serve synced images from img.pro
+        'pause_reason' => '',    // Why sync is paused (see PAUSE_* constants)
+        'pause_detail' => '',    // Message returned by img.pro when sync paused
+        'removing'     => false, // Remove-all in progress
     ];
 
     /**
@@ -300,7 +101,7 @@ class ImgPro_CDN_Settings {
         }
 
         $stored = get_option(self::OPTION_KEY, []);
-        $this->settings = wp_parse_args($stored, $this->defaults);
+        $this->settings = wp_parse_args(is_array($stored) ? $stored : [], $this->defaults);
 
         return $this->settings;
     }
@@ -315,17 +116,6 @@ class ImgPro_CDN_Settings {
      */
     public function get($key, $default = null) {
         $settings = $this->get_all();
-
-        // Auto-configure Cloud mode CDN URL (single domain architecture)
-        if (self::MODE_CLOUD === $settings['setup_mode']) {
-            if ('cdn_url' === $key) {
-                // Use custom domain if active, otherwise default cloud domain
-                if (!empty($settings['custom_domain']) && 'active' === $settings['custom_domain_status']) {
-                    return $settings['custom_domain'];
-                }
-                return self::CLOUD_CDN_DOMAIN;
-            }
-        }
 
         if (isset($settings[$key])) {
             return $settings[$key];
@@ -371,257 +161,55 @@ class ImgPro_CDN_Settings {
     public function validate($settings) {
         $validated = [];
 
-        // Setup mode (string: 'cloud' or 'cloudflare')
-        if (isset($settings['setup_mode'])) {
-            $mode = sanitize_text_field($settings['setup_mode']);
-            if (in_array($mode, [self::MODE_CLOUD, self::MODE_CLOUDFLARE], true)) {
-                $validated['setup_mode'] = $mode;
-            }
-        }
-
-        // Per-mode enabled states (boolean)
-        if (isset($settings['cloud_enabled'])) {
-            $validated['cloud_enabled'] = (bool) $settings['cloud_enabled'];
-        }
-        if (isset($settings['cloudflare_enabled'])) {
-            $validated['cloudflare_enabled'] = (bool) $settings['cloudflare_enabled'];
-        }
-
-        // Cloud-specific fields
-        if (isset($settings['cloud_api_key'])) {
-            $api_key = sanitize_text_field($settings['cloud_api_key']);
+        if (isset($settings['api_key'])) {
+            $api_key = self::sanitize_api_key($settings['api_key']);
             // SECURITY: Encrypt API key before storage
-            // Skip encryption if already encrypted (prevents double-encryption)
-            if (!empty($api_key) && !ImgPro_CDN_Crypto::is_encrypted($api_key)) {
+            if ('' !== $api_key && !ImgPro_CDN_Crypto::is_encrypted($api_key)) {
                 $api_key = ImgPro_CDN_Crypto::encrypt($api_key);
             }
-            $validated['cloud_api_key'] = $api_key;
+            $validated['api_key'] = $api_key;
         }
-        if (isset($settings['cloud_email'])) {
-            $validated['cloud_email'] = sanitize_email($settings['cloud_email']);
+
+        if (isset($settings['enabled'])) {
+            $validated['enabled'] = (bool) $settings['enabled'];
         }
-        if (isset($settings['cloud_tier'])) {
-            $tier = sanitize_text_field($settings['cloud_tier']);
-            if (in_array($tier, self::VALID_TIERS, true)) {
-                $validated['cloud_tier'] = $tier;
+
+        if (isset($settings['pause_reason'])) {
+            $reason = sanitize_key($settings['pause_reason']);
+            if (in_array($reason, [self::PAUSE_NONE, self::PAUSE_QUOTA, self::PAUSE_AUTH, self::PAUSE_APP], true)) {
+                $validated['pause_reason'] = $reason;
             }
         }
 
-        // Usage stats (integers)
-        // Bandwidth is primary metric (monthly), Cache is secondary (LRU-managed)
-        if (isset($settings['bandwidth_used'])) {
-            $validated['bandwidth_used'] = absint($settings['bandwidth_used']);
-        }
-        if (isset($settings['bandwidth_limit'])) {
-            $validated['bandwidth_limit'] = absint($settings['bandwidth_limit']);
-        }
-        if (isset($settings['cache_limit'])) {
-            $validated['cache_limit'] = absint($settings['cache_limit']);
-        }
-        if (isset($settings['cache_hits'])) {
-            $validated['cache_hits'] = absint($settings['cache_hits']);
-        }
-        if (isset($settings['cache_misses'])) {
-            $validated['cache_misses'] = absint($settings['cache_misses']);
-        }
-        if (isset($settings['stats_updated_at'])) {
-            $validated['stats_updated_at'] = absint($settings['stats_updated_at']);
-        }
-        if (isset($settings['billing_period_start'])) {
-            $validated['billing_period_start'] = absint($settings['billing_period_start']);
-        }
-        if (isset($settings['billing_period_end'])) {
-            $validated['billing_period_end'] = absint($settings['billing_period_end']);
+        if (isset($settings['pause_detail'])) {
+            $validated['pause_detail'] = sanitize_text_field($settings['pause_detail']);
         }
 
-        // Onboarding state
-        if (isset($settings['onboarding_completed'])) {
-            $validated['onboarding_completed'] = (bool) $settings['onboarding_completed'];
-        }
-        if (isset($settings['onboarding_step'])) {
-            $step = absint($settings['onboarding_step']);
-            $validated['onboarding_step'] = max(1, min(4, $step)); // Clamp 1-4
-        }
-        if (isset($settings['marketing_opt_in'])) {
-            $validated['marketing_opt_in'] = (bool) $settings['marketing_opt_in'];
-        }
-
-        // Custom domain (Cloud mode only)
-        if (isset($settings['custom_domain'])) {
-            $validated['custom_domain'] = self::sanitize_domain($settings['custom_domain']);
-        }
-        if (isset($settings['custom_domain_status'])) {
-            $status = sanitize_text_field($settings['custom_domain_status']);
-            if (in_array($status, ['', 'pending_dns', 'pending_ssl', 'active', 'error'], true)) {
-                $validated['custom_domain_status'] = $status;
-            }
-        }
-
-        // CDN URL (domain only - single domain architecture)
-        if (isset($settings['cdn_url'])) {
-            $cdn_url = self::sanitize_domain($settings['cdn_url']);
-            // SECURITY: Validate CDN URL format
-            if (!empty($cdn_url) && !self::is_valid_cdn_url($cdn_url)) {
-                // Invalid CDN URL - clear it to prevent misconfiguration
-                $cdn_url = '';
-            }
-            $validated['cdn_url'] = $cdn_url;
-        }
-
-        // Source URLs (array) - synced from API, used by rewriter
-        if (isset($settings['source_urls'])) {
-            $domains = (array) $settings['source_urls'];
-            $validated['source_urls'] = array_map(
-                [self::class, 'sanitize_domain'],
-                array_filter($domains)
-            );
-        }
-
-        // Debug mode (boolean)
-        if (isset($settings['debug_mode'])) {
-            $validated['debug_mode'] = (bool) $settings['debug_mode'];
+        if (isset($settings['removing'])) {
+            $validated['removing'] = (bool) $settings['removing'];
         }
 
         return $validated;
     }
 
     /**
-     * Sanitize domain name
+     * Sanitize an API key as pasted by the user
      *
-     * Removes:
-     * - Protocol (http://, https://)
-     * - Paths and trailing slashes
-     * - Leading dots (normalizes .example.com to example.com)
-     * - Multiple consecutive dots
-     * - Invalid characters
-     * Converts to lowercase
-     * Validates basic domain format
+     * Keys are opaque tokens; strip whitespace and anything outside
+     * the URL-safe character set.
      *
-     * @since 0.1.0
-     * @param string $domain Domain to sanitize.
-     * @return string Sanitized domain or empty string if invalid.
+     * @since 2.0.0
+     * @param string $api_key Raw key.
+     * @return string Sanitized key.
      */
-    public static function sanitize_domain($domain) {
-        // Remove protocol
-        $domain = preg_replace('#^https?://#i', '', $domain);
-
-        // Remove port number if present
-        $domain = preg_replace('#:\d+$#', '', $domain);
-
-        // Remove trailing slashes and paths
-        $domain = rtrim($domain, '/');
-        $domain = preg_replace('#/.*$#', '', $domain);
-
-        // Sanitize text
-        $domain = sanitize_text_field($domain);
-
-        // Remove leading dots (normalize .example.com to example.com)
-        $domain = ltrim($domain, '.');
-
-        // Remove multiple consecutive dots (security measure)
-        $domain = preg_replace('/\.{2,}/', '.', $domain);
-
-        // Remove trailing dots
-        $domain = rtrim($domain, '.');
-
-        // Convert to lowercase
-        $domain = strtolower($domain);
-
-        // SECURITY: Handle IDN/punycode domains
-        // Convert internationalized domain names to ASCII punycode to prevent homograph attacks
-        // Example: "exаmple.com" (with Cyrillic 'а') -> "xn--exmple-4uf.com"
-        if (function_exists('idn_to_ascii') && !empty($domain)) {
-            // Check if domain contains non-ASCII characters
-            if (preg_match('/[^\x20-\x7E]/', $domain)) {
-                // Convert to punycode (ASCII-compatible encoding)
-                $ascii_domain = idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
-                if ($ascii_domain !== false) {
-                    $domain = $ascii_domain;
-                } else {
-                    // IDN conversion failed - reject the domain
-                    return '';
-                }
-            }
-        }
-
-        // Validate domain format (basic validation)
-        // Allows: letters, numbers, hyphens, dots
-        // Doesn't allow: spaces, special chars, etc.
-        // Note: After IDN conversion, domain should be ASCII-only
-        if (!empty($domain) && !preg_match('/^[a-z0-9]([a-z0-9\-\.]*[a-z0-9])?$/i', $domain)) {
-            // Invalid domain format
+    public static function sanitize_api_key($api_key) {
+        if (!is_string($api_key)) {
             return '';
         }
-
-        return $domain;
-    }
-
-    /**
-     * Validate CDN URL format
-     *
-     * SECURITY: Validates that a CDN URL is properly formatted and safe to use.
-     * Prevents misconfiguration that could break image loading or create security issues.
-     *
-     * @since 0.2.0
-     * @param string $cdn_url The CDN URL (domain only) to validate.
-     * @return bool True if valid.
-     */
-    public static function is_valid_cdn_url($cdn_url) {
-        // Must not be empty
-        if (empty($cdn_url)) {
-            return false;
+        if (ImgPro_CDN_Crypto::is_encrypted($api_key)) {
+            return $api_key;
         }
-
-        // Must be a valid domain format (no protocol, path, or query)
-        if (preg_match('#[:/\?\#]#', $cdn_url)) {
-            return false;
-        }
-
-        // Must have at least one dot (TLD required)
-        if (strpos($cdn_url, '.') === false) {
-            return false;
-        }
-
-        // Must not be an IP address (prevents SSRF-like issues)
-        if (filter_var($cdn_url, FILTER_VALIDATE_IP)) {
-            return false;
-        }
-
-        // Must not be a reserved/internal domain
-        $reserved_patterns = [
-            '/^localhost$/i',
-            '/\.local$/i',
-            '/\.internal$/i',
-            '/\.test$/i',
-            '/\.example$/i',
-            '/\.invalid$/i',
-            '/^127\.\d+\.\d+\.\d+$/',
-            '/^10\.\d+\.\d+\.\d+$/',
-            '/^192\.168\.\d+\.\d+$/',
-            '/^172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+$/',
-        ];
-
-        foreach ($reserved_patterns as $pattern) {
-            if (preg_match($pattern, $cdn_url)) {
-                return false;
-            }
-        }
-
-        // Basic DNS format validation
-        // Allows: letters, numbers, hyphens, dots
-        // Each label must start and end with alphanumeric
-        $labels = explode('.', $cdn_url);
-        foreach ($labels as $label) {
-            if (empty($label) || strlen($label) > 63) {
-                return false;
-            }
-            // Label must start and end with alphanumeric
-            if (!preg_match('/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/i', $label)) {
-                return false;
-            }
-        }
-
-        return true;
+        return preg_replace('/[^A-Za-z0-9_\-\.]/', '', trim($api_key));
     }
 
     /**
@@ -634,15 +222,43 @@ class ImgPro_CDN_Settings {
      * @return string Decrypted API key or empty string.
      */
     public function get_api_key() {
-        $settings = $this->get_all();
-        $encrypted_key = $settings['cloud_api_key'] ?? '';
+        $encrypted_key = $this->get('api_key', '');
 
         if (empty($encrypted_key)) {
             return '';
         }
 
-        // Decrypt if encrypted, otherwise return as-is (for backwards compatibility)
-        return ImgPro_CDN_Crypto::decrypt($encrypted_key);
+        return (string) ImgPro_CDN_Crypto::decrypt($encrypted_key);
+    }
+
+    /**
+     * Whether an img.pro API key is stored
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    public function is_connected() {
+        return '' !== $this->get_api_key();
+    }
+
+    /**
+     * Whether images should be served from img.pro on this request
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    public function is_serving() {
+        return $this->is_connected() && (bool) $this->get('enabled') && !$this->get('removing');
+    }
+
+    /**
+     * Whether the background sync may upload files
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    public function can_sync() {
+        return $this->is_connected() && self::PAUSE_NONE === $this->get('pause_reason') && !$this->get('removing');
     }
 
     /**
@@ -653,18 +269,7 @@ class ImgPro_CDN_Settings {
      */
     public function reset() {
         $this->settings = null;
-        return update_option(self::OPTION_KEY, $this->defaults);
-    }
-
-    /**
-     * Delete all settings
-     *
-     * @since 0.1.0
-     * @return bool
-     */
-    public function delete() {
-        $this->settings = null;
-        return delete_option(self::OPTION_KEY);
+        return update_option(self::OPTION_KEY, $this->defaults, true);
     }
 
     /**
@@ -681,302 +286,28 @@ class ImgPro_CDN_Settings {
     }
 
     /**
-     * Get default value for a setting
+     * Label identifying this site's images inside the img.pro App
      *
-     * @since 0.1.0
-     * @param string $key Setting key.
-     * @return mixed
+     * Several sites can share one App, so every upload is labelled
+     * with the site's home URL (host plus path, no scheme).
+     *
+     * @since 2.0.0
+     * @return string
      */
-    public function get_default($key) {
-        return $this->defaults[$key] ?? null;
-    }
+    public static function get_site_label() {
+        $home = (string) home_url();
+        $label = strtolower(preg_replace('#^https?://#i', '', untrailingslashit($home)));
+        // Label values may not contain commas and are capped at 128 characters
+        $label = str_replace(',', '', $label);
 
-    /**
-     * Get API base URL with filter support
-     *
-     * Static method to allow usage without instance.
-     *
-     * @since 0.1.3
-     * @return string API base URL.
-     */
-    public static function get_api_base_url() {
         /**
-         * Filter the API base URL for cloud services.
+         * Filter the site label used to tag images in img.pro.
          *
-         * Useful for testing or staging environments.
-         *
-         * @since 0.1.2
-         * @param string $api_base_url The default API base URL.
+         * @since 2.0.0
+         * @param string $label Site label (host and path of home_url()).
          */
-        return apply_filters('imgpro_cdn_api_base_url', self::API_BASE_URL);
-    }
+        $label = (string) apply_filters('imgpro_cdn_site_label', $label);
 
-    /**
-     * Check if a given mode has valid configuration
-     *
-     * Cloud mode requires free or paid subscription.
-     * Cloudflare mode requires CDN URL to be configured (single domain architecture).
-     *
-     * @since 0.1.3
-     * @param string $mode     The mode to check ('cloud' or 'cloudflare').
-     * @param array  $settings The settings array to check against.
-     * @return bool True if the mode is properly configured.
-     */
-    public static function is_mode_valid($mode, $settings) {
-        if (self::MODE_CLOUD === $mode) {
-            $tier = $settings['cloud_tier'] ?? '';
-            return in_array($tier, self::ACTIVE_TIERS, true);
-        } elseif (self::MODE_CLOUDFLARE === $mode) {
-            return !empty($settings['cdn_url']);
-        }
-        return false;
-    }
-
-    /**
-     * Check if a specific mode is enabled
-     *
-     * Each mode has its own independent enabled state.
-     *
-     * @since 0.1.7
-     * @param string $mode     The mode to check ('cloud' or 'cloudflare').
-     * @param array  $settings The settings array to check against.
-     * @return bool True if the mode is enabled.
-     */
-    public static function is_mode_enabled($mode, $settings) {
-        if (self::MODE_CLOUD === $mode) {
-            return !empty($settings['cloud_enabled']);
-        } elseif (self::MODE_CLOUDFLARE === $mode) {
-            return !empty($settings['cloudflare_enabled']);
-        }
-        return false;
-    }
-
-    /**
-     * Check if CDN is currently active
-     *
-     * CDN is active when: current mode is valid AND that mode is enabled.
-     * This determines whether image rewriting actually happens.
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if CDN is currently active.
-     */
-    public static function is_cdn_active($settings) {
-        $mode = $settings['setup_mode'] ?? '';
-        if (empty($mode)) {
-            return false;
-        }
-        return self::is_mode_valid($mode, $settings) && self::is_mode_enabled($mode, $settings);
-    }
-
-    /**
-     * Check if user has any paid subscription
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if user has a paid subscription.
-     */
-    public static function is_paid($settings) {
-        $tier = $settings['cloud_tier'] ?? '';
-        return in_array($tier, self::PAID_TIERS, true);
-    }
-
-    /**
-     * Check if user has a paid subscription (alias for is_paid for backwards compatibility)
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if user has a paid subscription.
-     */
-    public static function is_pro($settings) {
-        return self::is_paid($settings);
-    }
-
-    /**
-     * Check if tier has custom domain feature
-     *
-     * All users get custom domain feature (single-tier model).
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool Always true - custom domains available to all users.
-     */
-    public static function has_custom_domain($settings) {
-        // Single-tier model: everyone gets all features including custom domains
-        return true;
-    }
-
-    /**
-     * Check if user is on free tier (trial)
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if user is on free/trial tier.
-     */
-    public static function is_free($settings) {
-        return self::TIER_FREE === ($settings['cloud_tier'] ?? '');
-    }
-
-    /**
-     * Check if user is on trial tier (alias for is_free)
-     *
-     * The free tier is now branded as "Trial" in the UI.
-     *
-     * @since 0.3.0
-     * @param array $settings The settings array to check against.
-     * @return bool True if user is on trial tier.
-     */
-    public static function is_trial($settings) {
-        return self::is_free($settings);
-    }
-
-    /**
-     * Check if user is on a tier with unlimited bandwidth (image or unlimited)
-     *
-     * @since 0.3.0
-     * @param array $settings The settings array to check against.
-     * @return bool True if user is on a tier with unlimited bandwidth.
-     */
-    public static function is_unlimited($settings) {
-        $tier = $settings['cloud_tier'] ?? '';
-        return in_array($tier, [self::TIER_IMAGE, self::TIER_UNLIMITED], true);
-    }
-
-    /**
-     * Check if subscription is cancelled or suspended
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if subscription is cancelled or suspended.
-     */
-    public static function is_subscription_inactive($settings) {
-        $tier = $settings['cloud_tier'] ?? '';
-        return in_array($tier, self::INACTIVE_TIERS, true);
-    }
-
-    /**
-     * Check if subscription needs attention (past due)
-     *
-     * @since 0.1.7
-     * @param array $settings The settings array to check against.
-     * @return bool True if subscription is past due.
-     */
-    public static function is_past_due($settings) {
-        return self::TIER_PAST_DUE === ($settings['cloud_tier'] ?? '');
-    }
-
-    /**
-     * Get bandwidth limit for current tier
-     *
-     * Bandwidth is tracked for reporting purposes only on unlimited tier.
-     * Returns -1 for unlimited tier (no limit).
-     *
-     * @since 0.2.0
-     * @param array $settings The settings array to check against.
-     * @return int Bandwidth limit in bytes, -1 for unlimited.
-     */
-    public static function get_bandwidth_limit($settings) {
-        $tier = $settings['cloud_tier'] ?? '';
-        switch ($tier) {
-            case self::TIER_IMAGE:
-            case self::TIER_UNLIMITED:
-            // Legacy tiers (treated as unlimited until migrated)
-            case self::TIER_LITE:
-            case self::TIER_PRO:
-            case self::TIER_BUSINESS:
-            case self::TIER_ACTIVE:
-            case self::TIER_PAST_DUE:
-                return -1; // Unlimited
-            case self::TIER_FREE:
-                return self::FREE_BANDWIDTH_LIMIT;
-            default:
-                return 0;
-        }
-    }
-
-    /**
-     * Get bandwidth usage percentage
-     *
-     * Returns 0 for unlimited tier (no percentage applies).
-     *
-     * @since 0.2.0
-     * @param array $settings The settings array to check against.
-     * @return float Percentage of bandwidth used (0-100), 0 for unlimited.
-     */
-    public static function get_bandwidth_percentage($settings) {
-        $limit = self::get_bandwidth_limit($settings);
-        // Unlimited tier or invalid limit
-        if ($limit <= 0) {
-            return 0;
-        }
-        $used = $settings['bandwidth_used'] ?? 0;
-        return min(100, ($used / $limit) * 100);
-    }
-
-    /**
-     * Get cache limit for current tier
-     *
-     * Cache is auto-managed via LRU eviction.
-     * Returns -1 for unlimited tier (no limit).
-     *
-     * @since 0.2.0
-     * @param array $settings The settings array to check against.
-     * @return int Cache limit in bytes, -1 for unlimited.
-     */
-    public static function get_cache_limit($settings) {
-        $tier = $settings['cloud_tier'] ?? '';
-        switch ($tier) {
-            case self::TIER_IMAGE:
-            case self::TIER_UNLIMITED:
-            // Legacy tiers (treated as unlimited until migrated)
-            case self::TIER_LITE:
-            case self::TIER_PRO:
-            case self::TIER_BUSINESS:
-            case self::TIER_ACTIVE:
-            case self::TIER_PAST_DUE:
-                return -1; // Unlimited
-            case self::TIER_FREE:
-                return self::FREE_CACHE_LIMIT;
-            default:
-                return 0;
-        }
-    }
-
-    /**
-     * Handle API error with action hook for logging
-     *
-     * Static method for error handling that fires an action hook.
-     *
-     * @since 0.1.3
-     * @param WP_Error|array $error   Error object or error data.
-     * @param string         $context Context for logging (e.g., 'checkout', 'recovery').
-     * @return void
-     */
-    public static function handle_api_error($error, $context = '') {
-        /**
-         * Fires when an API error occurs.
-         *
-         * @since 0.1.0
-         * @param WP_Error|array $error   Error object or error data.
-         * @param string         $context Context for the error.
-         */
-        do_action('imgpro_cdn_api_error', $error, $context);
-    }
-
-    /**
-     * Format bytes to human readable string
-     *
-     * @since 0.1.7
-     * @param int $bytes Bytes to format.
-     * @param int $precision Decimal precision.
-     * @return string Formatted string (e.g., "1.5 GB").
-     */
-    public static function format_bytes($bytes, $precision = 1) {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return substr(trim($label), 0, 128);
     }
 }

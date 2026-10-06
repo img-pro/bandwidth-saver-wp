@@ -55,27 +55,14 @@ class ImgPro_CDN_Security {
      * @var array
      */
     private static $nonce_actions = [
-        'imgpro_cdn_toggle_enabled'       => 'toggle_enabled',
-        'imgpro_cdn_checkout'             => 'checkout',
-        'imgpro_cdn_manage_subscription'  => 'manage_subscription',
-        'imgpro_cdn_request_recovery'     => 'recovery',
-        'imgpro_cdn_verify_recovery'      => 'recovery',
-        'imgpro_cdn_add_custom_domain'    => 'custom_domain',
-        'imgpro_cdn_check_custom_domain'  => 'custom_domain',
-        'imgpro_cdn_remove_custom_domain' => 'custom_domain',
-        'imgpro_cdn_remove_cdn_domain'    => 'remove_cdn_domain',
-        'imgpro_cdn_free_register'        => 'free_register',
-        'imgpro_cdn_update_onboarding_step' => 'onboarding',
-        'imgpro_cdn_complete_onboarding'  => 'onboarding',
-        'imgpro_cdn_sync_stats'           => 'sync_stats',
-        'imgpro_cdn_health_check'         => 'health_check',
-        'imgpro_cdn_get_usage'            => 'analytics',
-        'imgpro_cdn_get_insights'         => 'analytics',
-        'imgpro_cdn_get_daily_usage'      => 'analytics',
-        'imgpro_cdn_get_usage_periods'    => 'analytics',
-        'imgpro_cdn_get_source_urls'      => 'source_urls',
-        'imgpro_cdn_add_source_url'       => 'source_urls',
-        'imgpro_cdn_remove_source_url'    => 'source_urls',
+        'imgpro_cdn_connect'        => 'connect',
+        'imgpro_cdn_disconnect'     => 'connect',
+        'imgpro_cdn_toggle_enabled' => 'toggle_enabled',
+        'imgpro_cdn_sync_status'    => 'sync',
+        'imgpro_cdn_sync_step'      => 'sync',
+        'imgpro_cdn_retry_failed'   => 'sync',
+        'imgpro_cdn_resume_sync'    => 'sync',
+        'imgpro_cdn_remove_all'     => 'remove_all',
     ];
 
     /**
@@ -217,13 +204,7 @@ class ImgPro_CDN_Security {
      * @return void
      */
     public static function remove_capability_from_all() {
-        global $wp_roles;
-
-        if (!isset($wp_roles)) {
-            $wp_roles = new WP_Roles();
-        }
-
-        foreach ($wp_roles->roles as $role_name => $role_info) {
+        foreach (wp_roles()->roles as $role_name => $role_info) {
             $role = get_role($role_name);
             if ($role) {
                 $role->remove_cap(self::CAPABILITY);

@@ -1,15 +1,345 @@
-# Copyright (C) 2025 ImgPro
-# This file is distributed under the same license as the Bandwidth Saver: Image CDN plugin.
+# Copyright (C) 2026 ImgPro
+# This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Bandwidth Saver: Image CDN 1.1.2\n"
+"Project-Id-Version: Bandwidth Saver: Image CDN 2.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/bandwidth-saver\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-12-01T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-10-06T19:49:45+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI\n"
+"X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: bandwidth-saver\n"
+
+#. Plugin Name of the plugin
+#: imgpro-cdn.php
+msgid "Bandwidth Saver: Image CDN"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: imgpro-cdn.php
+msgid "https://github.com/img-pro/bandwidth-saver-wp"
+msgstr ""
+
+#. Description of the plugin
+#: imgpro-cdn.php
+msgid "Serve your WordPress media library from the img.pro image CDN. Connect your own img.pro App and your images are copied there and delivered worldwide."
+msgstr ""
+
+#. Author of the plugin
+#: imgpro-cdn.php
+msgid "ImgPro"
+msgstr ""
+
+#. Author URI of the plugin
+#: imgpro-cdn.php
+msgid "https://img.pro"
+msgstr ""
+
+#: imgpro-cdn.php:28
+msgid "Bandwidth Saver requires WordPress 6.2 or higher. Please update WordPress to use this plugin."
+msgstr ""
+
+#: imgpro-cdn.php:40
+msgid "Bandwidth Saver requires PHP 7.4 or higher. Contact your hosting provider to upgrade."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:81
+msgid "Paste your img.pro API key."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:108
+msgid "Connected."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:123
+msgid "img.pro did not recognize this key. Check that you copied all of it and that it has not been revoked."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:126
+msgid "This key cannot upload images. Create a key with Read and Write permission."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:129
+msgid "img.pro has paused this App. Check your App on img.pro."
+msgstr ""
+
+#. translators: %s: connection error message
+#: includes/class-imgpro-cdn-admin-ajax.php:133
+msgid "Could not reach img.pro: %s"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:164
+#: includes/class-imgpro-cdn-admin-ajax.php:182
+msgid "img.pro is not connected."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:84
+#: includes/class-imgpro-cdn-admin.php:85
+#: includes/class-imgpro-cdn-admin.php:259
+msgid "Bandwidth Saver"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:125
+msgid "Checking your key…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:126
+#: includes/class-imgpro-cdn-admin.php:306
+msgid "Connect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:127
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:130
+msgid "Stop serving images from img.pro? Your images stay in your img.pro App."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:131
+msgid "Delete every image this site uploaded to img.pro, then disconnect? This cannot be undone."
+msgstr ""
+
+#. translators: 1: number of files on img.pro, 2: total number of files
+#: includes/class-imgpro-cdn-admin.php:133
+msgid "%1$s of %2$s files on img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:135
+msgid "Scanning your media library…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:136
+msgid "Checking for images already in your img.pro App…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:137
+msgid "Copying images to img.pro…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:138
+msgid "img.pro asked us to slow down. Sync will continue shortly."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:139
+msgid "Sync is paused."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:140
+msgid "Deleting this site's images from img.pro…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:141
+msgid "All images are in sync."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:169
+msgid "Bandwidth Saver 2.0 now runs on your own img.pro account."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:170
+msgid "The old managed CDN has been shut down, so your images load from your own server until you connect an img.pro API key."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:171
+#: includes/class-imgpro-cdn-admin.php:286
+msgid "Connect img.pro"
+msgstr ""
+
+#. translators: 1: images stored, 2: plan limit
+#: includes/class-imgpro-cdn-admin.php:233
+msgid "%1$s of %2$s"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:249
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:260
+msgid "Image CDN for WordPress, powered by img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:286
+msgid "Replace your img.pro API key"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:288
+msgid "Bandwidth Saver copies your media library to your own img.pro App and serves it from img.pro's global CDN. Your original files stay on your server."
+msgstr ""
+
+#. translators: %s: link to the img.pro dashboard
+#: includes/class-imgpro-cdn-admin.php:295
+msgid "Sign in at %s and create an App (the free plan works)."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:300
+msgid "In the App, open API Keys and create a key with Read and Write permission."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:301
+msgid "Paste the key here."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:304
+msgid "img.pro API key"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:310
+msgid "Every file WordPress creates for an image (the full size and each thumbnail size) is stored as one image in your App. img.pro plans are limited by the number of stored images."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:333
+#: includes/class-imgpro-cdn-admin.php:341
+msgid "Serve images from img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:347
+msgid "Media sync"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:354
+msgid "waiting"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:355
+msgid "failed"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:356
+msgid "stay on your server (format or size not supported)"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:359
+msgid "Retry failed files"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:360
+msgid "Resume sync"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:366
+msgid "img.pro App"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:369
+msgid "Manage your App and plan on img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:380
+msgid "Disconnect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:381
+msgid "Disconnecting stops serving images from img.pro and forgets your API key. Choose whether the copies in your img.pro App should be kept or deleted."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:383
+msgid "Disconnect and keep images"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:384
+msgid "Delete images from img.pro and disconnect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:399
+msgid "On. Images that finished copying load from img.pro; the rest load from your server."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:400
+msgid "Off. All images load from your server. Copying to img.pro continues in the background."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:412
+msgid "Your img.pro App reached its plan's image limit. Images already copied keep loading from img.pro and new ones load from your server. Upgrade your img.pro plan or free up space, then resume."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:413
+msgid "img.pro rejected your API key, or the key cannot upload. Paste a key with Read and Write permission below."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:414
+msgid "img.pro has paused this App. Check your App on img.pro, then resume."
+msgstr ""
+
+#. translators: %s: error message returned by img.pro
+#: includes/class-imgpro-cdn-admin.php:427
+msgid "img.pro said: %s"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:448
+msgid "Recent failures"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:467
+msgid "Usage is unavailable right now."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:472
+msgid "Free"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:473
+msgid "Pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:474
+msgid "Unlimited"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:480
+msgid "Plan"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:482
+msgid "Images stored in the App"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:487
+msgid "Your App is close to its image limit. When it is full, new images keep loading from your server."
+msgstr ""
+
+#: includes/class-imgpro-cdn-api.php:113
+msgid "The file could not be read from disk."
+msgstr ""
+
+#: includes/class-imgpro-cdn-api.php:199
+msgid "No img.pro API key is configured."
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/class-imgpro-cdn-api.php:242
+msgid "img.pro returned HTTP %d."
+msgstr ""
+
+#: includes/class-imgpro-cdn-core.php:155
+msgid "Settings"
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:386
+msgid "img.pro does not accept this file format."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:389
+#: includes/class-imgpro-cdn-sync.php:469
+msgid "The file is missing from the uploads folder."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:392
+msgid "The file is larger than the 20 MB img.pro accepts."
+msgstr ""
+
+#: includes/class-imgpro-cdn-security.php:113
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: includes/class-imgpro-cdn-security.php:167
+msgid "Too many requests. Please wait a moment and try again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-sync.php:494
+msgid "img.pro returned an unexpected response."
+msgstr ""

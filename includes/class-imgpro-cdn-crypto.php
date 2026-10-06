@@ -198,30 +198,4 @@ class ImgPro_CDN_Crypto {
         // Fallback: simple derivation using HMAC
         return hash_hmac('sha256', $info . $salt, $ikm, true);
     }
-
-    /**
-     * Migrate plaintext API key to encrypted storage
-     *
-     * Call this during plugin upgrade to encrypt existing keys.
-     *
-     * @param array $settings Current settings array.
-     * @return array Settings with encrypted API key.
-     */
-    public static function maybe_encrypt_api_key($settings) {
-        if (!isset($settings['cloud_api_key']) || empty($settings['cloud_api_key'])) {
-            return $settings;
-        }
-
-        $api_key = $settings['cloud_api_key'];
-
-        // Already encrypted - no action needed
-        if (self::is_encrypted($api_key)) {
-            return $settings;
-        }
-
-        // Encrypt and update
-        $settings['cloud_api_key'] = self::encrypt($api_key);
-
-        return $settings;
-    }
 }

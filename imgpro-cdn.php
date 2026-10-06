@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Bandwidth Saver: Image CDN
  * Plugin URI: https://github.com/img-pro/bandwidth-saver-wp
- * Description: Image CDN for WordPress. Serve images from 300+ global edge servers. Faster Core Web Vitals, better SEO. $9.99/mo.
- * Version: 1.1.3
+ * Description: Serve your WordPress media library from the img.pro image CDN. Connect your own img.pro App and your images are copied there and delivered worldwide.
+ * Version: 2.0.0
  * Author: ImgPro
  * Author URI: https://img.pro
  * License: GPLv2 or later
@@ -46,7 +46,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
 
 // Define plugin constants
 if (!defined('IMGPRO_CDN_VERSION')) {
-    define('IMGPRO_CDN_VERSION', '1.1.3');
+    define('IMGPRO_CDN_VERSION', '2.0.0');
 }
 if (!defined('IMGPRO_CDN_PLUGIN_DIR')) {
     define('IMGPRO_CDN_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -66,9 +66,9 @@ require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-crypto.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-security.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-api.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-settings.php';
+require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-files.php';
+require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-sync.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-rewriter.php';
-require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-plan-selector.php';
-require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-onboarding.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-admin.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-admin-ajax.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-core.php';
@@ -96,7 +96,6 @@ add_action('wp_footer', 'imgpro_cdn_add_version_html', 999);
 
 /**
  * Add version header to HTTP response for easy curl checking
- * Only adds on frontend when plugin is enabled
  *
  * @since 0.1.0
  * @return void

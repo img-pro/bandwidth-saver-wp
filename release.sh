@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##
-# Release Script for Unlimited CDN
+# Release Script for Bandwidth Saver: Image CDN
 # Creates a clean WordPress.org-ready zip file
 ##
 
@@ -21,7 +21,7 @@ BUILD_DIR="/tmp/${FOLDER_NAME}"
 OUTPUT_DIR="$(dirname "${PLUGIN_DIR}")"
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}  Unlimited CDN - Release Build${NC}"
+echo -e "${GREEN}  Bandwidth Saver - Release Build${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
