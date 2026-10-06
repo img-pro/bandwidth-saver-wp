@@ -109,8 +109,9 @@
         }
 
         if (['scanning', 'matching', 'uploading', 'removing'].indexOf(status.phase) !== -1) {
-            // Work remains: run another step right away
-            timer = setTimeout(step, 500);
+            // Work remains: run another step right away, or later when
+            // another request is already syncing
+            timer = setTimeout(step, status.wait > 0 ? status.wait * 1000 : 500);
         } else if (status.phase === 'waiting') {
             timer = setTimeout(step, Math.max(5, status.wait || 15) * 1000);
         } else {

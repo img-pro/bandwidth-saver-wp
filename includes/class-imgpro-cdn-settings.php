@@ -79,6 +79,7 @@ class ImgPro_CDN_Settings {
         'pause_reason' => '',    // Why sync is paused (see PAUSE_* constants)
         'pause_detail' => '',    // Message returned by img.pro when sync paused
         'removing'     => false, // Remove-all in progress
+        'site_label'   => '',    // Label this site's images carry in img.pro, fixed at connect time
     ];
 
     /**
@@ -132,7 +133,9 @@ class ImgPro_CDN_Settings {
      * @return bool
      */
     public function update($new_settings) {
-        $current = $this->get_all();
+        // Merge into the stored value, not this request's copy: a sync run
+        // can last a minute while the admin changes settings elsewhere.
+        $current = $this->refresh();
         $validated = $this->validate($new_settings);
         $updated = array_merge($current, $validated);
 
@@ -187,6 +190,10 @@ class ImgPro_CDN_Settings {
 
         if (isset($settings['removing'])) {
             $validated['removing'] = (bool) $settings['removing'];
+        }
+
+        if (isset($settings['site_label'])) {
+            $validated['site_label'] = self::clean_label($settings['site_label']);
         }
 
         return $validated;
@@ -286,20 +293,64 @@ class ImgPro_CDN_Settings {
     }
 
     /**
+     * Reload settings from the database
+     *
+     * Bypasses the options cache, which only reflects the value this
+     * request started with when no persistent object cache is used.
+     *
+     * @since 2.0.0
+     * @return array Fresh settings.
+     */
+    public function refresh() {
+        global $wpdb;
+
+        $raw = $wpdb->get_var(
+            $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1", self::OPTION_KEY)
+        );
+        $stored = null === $raw ? [] : maybe_unserialize($raw);
+        $stored = is_array($stored) ? $stored : [];
+
+        // Keep update_option() from comparing against a stale cached copy
+        if (get_option(self::OPTION_KEY, []) !== $stored) {
+            wp_cache_delete(self::OPTION_KEY, 'options');
+            wp_cache_delete('alloptions', 'options');
+        }
+
+        $this->settings = wp_parse_args($stored, $this->defaults);
+        return $this->settings;
+    }
+
+    /**
      * Label identifying this site's images inside the img.pro App
      *
      * Several sites can share one App, so every upload is labelled
-     * with the site's home URL (host plus path, no scheme).
+     * with the site's home URL (host plus path, no scheme). The label is
+     * stored when the site connects, so moving the site to a new address
+     * does not orphan the images it already uploaded.
      *
      * @since 2.0.0
      * @return string
      */
     public static function get_site_label() {
+        $settings = get_option(self::OPTION_KEY, []);
+        if (is_array($settings) && !empty($settings['site_label'])) {
+            return (string) $settings['site_label'];
+        }
+        return self::current_site_label();
+    }
+
+    /**
+     * Label for the site's current address
+     *
+     * Differs from get_site_label() after the site moves to a new
+     * address, or on a copy of the site such as a staging site.
+     *
+     * @since 2.0.0
+     * @return string
+     */
+    public static function current_site_label() {
         $home = (string) home_url();
         $label = strtolower(preg_replace('#^https?://#i', '', untrailingslashit($home)));
-        // Label values may not contain commas and are capped at 128 characters
-        $label = str_replace(',', '', $label);
-
         /**
          * Filter the site label used to tag images in img.pro.
          *
@@ -308,6 +359,20 @@ class ImgPro_CDN_Settings {
          */
         $label = (string) apply_filters('imgpro_cdn_site_label', $label);
 
+        return self::clean_label($label);
+    }
+
+    /**
+     * Make a string safe to use as a label value
+     *
+     * Label values may not contain commas and are capped at 128 characters.
+     *
+     * @since 2.0.0
+     * @param string $label Raw label.
+     * @return string
+     */
+    private static function clean_label($label) {
+        $label = str_replace(',', '', sanitize_text_field((string) $label));
         return substr(trim($label), 0, 128);
     }
 }

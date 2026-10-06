@@ -40,6 +40,7 @@ function imgpro_cdn_uninstall_site() {
         'imgpro_cdn_sync_state',
         'imgpro_cdn_sync_lock',
         'imgpro_cdn_v2_notice',
+        'imgpro_cdn_removal_leftover',
     ];
     foreach ($options as $option) {
         delete_option($option);

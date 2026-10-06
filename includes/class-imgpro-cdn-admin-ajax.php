@@ -93,17 +93,23 @@ class ImgPro_CDN_Admin_Ajax {
             wp_send_json_error(['message' => $this->describe_key_error($write)]);
         }
 
+        // A key replaced while images are being deleted carries on deleting
+        $removing = (bool) $this->settings->refresh()['removing'];
+
         $this->settings->update([
             'api_key'      => $api_key,
-            'enabled'      => true,
+            'enabled'      => !$removing,
             'pause_reason' => ImgPro_CDN_Settings::PAUSE_NONE,
             'pause_detail' => '',
-            'removing'     => false,
         ]);
         set_transient(ImgPro_CDN_Admin::USAGE_TRANSIENT, $usage, MINUTE_IN_SECONDS);
         delete_option(ImgPro_CDN_Core::UPGRADE_NOTICE_OPTION);
 
-        $this->sync->start();
+        if ($removing) {
+            ImgPro_CDN_Sync::schedule_soon();
+        } else {
+            $this->sync->start();
+        }
 
         wp_send_json_success(['message' => __('Connected.', 'bandwidth-saver')]);
     }
@@ -209,12 +215,19 @@ class ImgPro_CDN_Admin_Ajax {
         check_ajax_referer(ImgPro_CDN_Security::get_nonce_action('imgpro_cdn_sync_step'), 'nonce');
         ImgPro_CDN_Security::check_permission();
 
+        $result = [];
         if ($this->settings->is_connected()) {
-            $this->sync->run(self::STEP_BUDGET);
+            $result = $this->sync->run(self::STEP_BUDGET);
             $this->settings->clear_cache();
         }
 
-        wp_send_json_success($this->status_payload());
+        $payload = $this->status_payload();
+        if (!empty($result['locked']) && isset($payload['status'])) {
+            // Another request is syncing; ask the page to check back later
+            $payload['status']['wait'] = max((int) $payload['status']['wait'], (int) $result['wait']);
+        }
+
+        wp_send_json_success($payload);
     }
 
     /**

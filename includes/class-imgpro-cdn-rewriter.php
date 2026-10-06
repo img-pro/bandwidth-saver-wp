@@ -521,10 +521,17 @@ class ImgPro_CDN_Rewriter {
     private function absolute_url($url) {
         $url = trim($url);
         if ('//' === substr($url, 0, 2)) {
-            return set_url_scheme('http:' . $url);
+            // Protocol-relative: the browser keeps the page's scheme
+            return $url;
         }
         if ('/' === substr($url, 0, 1)) {
-            return home_url($url);
+            // Root-relative: prefix the site's host only, so a home URL in a
+            // subfolder (example.com/blog) doesn't add its path twice
+            $home = wp_parse_url(home_url());
+            if (empty($home['host'])) {
+                return $url;
+            }
+            return '//' . $home['host'] . (isset($home['port']) ? ':' . $home['port'] : '') . $url;
         }
         return $url;
     }

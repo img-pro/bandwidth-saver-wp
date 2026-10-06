@@ -119,7 +119,8 @@ class ImgPro_CDN_Files {
   KEY status (status)
 ) {$charset_collate};");
 
-        update_option(self::DB_VERSION_OPTION, self::DB_VERSION, false);
+        // Read on every request by maybe_install(), so autoload it
+        update_option(self::DB_VERSION_OPTION, self::DB_VERSION, true);
     }
 
     /**
@@ -137,13 +138,32 @@ class ImgPro_CDN_Files {
     /**
      * Remove every row
      *
+     * @param bool $keep_deletions Keep rows still waiting to delete an
+     *                             img.pro copy, so they are not orphaned.
      * @return void
      */
-    public static function clear() {
+    public static function clear($keep_deletions = false) {
         global $wpdb;
         $table = self::table();
-        $wpdb->query($wpdb->prepare('DELETE FROM %i', $table));
+        if ($keep_deletions) {
+            $wpdb->query($wpdb->prepare('DELETE FROM %i WHERE status <> %s', $table, self::STATUS_DELETE));
+        } else {
+            $wpdb->query($wpdb->prepare('DELETE FROM %i', $table));
+        }
         self::flush_cache();
+    }
+
+    /**
+     * Add this plugin's table to the ones dropped with a network site
+     *
+     * @param string[] $tables  Tables to drop.
+     * @param int      $site_id Site being deleted.
+     * @return string[]
+     */
+    public static function drop_site_table($tables, $site_id) {
+        global $wpdb;
+        $tables[] = $wpdb->get_blog_prefix($site_id) . 'imgpro_files';
+        return $tables;
     }
 
     /**
@@ -320,9 +340,11 @@ class ImgPro_CDN_Files {
             $existing[$row->file] = $row;
         }
 
-        // Files that are no longer part of the attachment
+        // Files that are no longer part of the attachment. WordPress keeps
+        // the old files when an image is edited and posts may still embed
+        // them, so their copies stay until the file itself is deleted.
         foreach ($existing as $file => $row) {
-            if (!isset($desired[$file])) {
+            if (!isset($desired[$file]) && !file_exists($basedir . '/' . $file)) {
                 self::retire_row($row);
             }
         }
@@ -342,13 +364,17 @@ class ImgPro_CDN_Files {
                 self::retire_row($row);
             }
 
-            list($status, $error) = self::initial_status($file, $bytes);
-
-            // A row from another attachment may still own this path
+            // Another attachment may share this file (media translations
+            // do). Its copy serves both, unless the file has changed.
             $owner = self::get_by_file($file);
             if ($owner) {
+                if ((int) $owner->file_bytes === $bytes && (int) $owner->file_mtime === $mtime) {
+                    continue;
+                }
                 self::retire_row($owner);
             }
+
+            list($status, $error) = self::initial_status($file, $bytes);
 
             $wpdb->insert($table, [
                 'attachment_id' => $attachment_id,
@@ -427,26 +453,49 @@ class ImgPro_CDN_Files {
     }
 
     /**
-     * Queue every img.pro copy of an attachment for deletion
+     * Queue the img.pro copy of a file WordPress deleted
      *
-     * @param int $attachment_id Attachment ID.
-     * @return void
+     * @param string $file Path relative to the uploads folder.
+     * @return bool Whether a row was retired.
      */
-    public static function forget_attachment($attachment_id) {
+    public static function retire_file($file) {
+        $row = self::get_by_file($file);
+        if (!$row) {
+            return false;
+        }
+        self::retire_row($row);
+        return true;
+    }
+
+    /**
+     * Retire rows whose attachment no longer exists and whose file is gone
+     *
+     * Catches attachments deleted while the plugin was inactive.
+     *
+     * @return int Rows retired.
+     */
+    public static function retire_orphans() {
         global $wpdb;
-        $table = self::table();
+        $table   = self::table();
+        $basedir = self::get_basedir();
+        $retired = 0;
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM %i WHERE attachment_id = %d AND status <> %s',
+                'SELECT f.* FROM %i f LEFT JOIN %i p ON p.ID = f.attachment_id WHERE p.ID IS NULL AND f.status <> %s',
                 $table,
-                (int) $attachment_id,
+                $wpdb->posts,
                 self::STATUS_DELETE
             )
         );
         foreach ((array) $rows as $row) {
-            self::retire_row($row);
+            if (!file_exists($basedir . '/' . $row->file)) {
+                self::retire_row($row);
+                $retired++;
+            }
         }
+
+        return $retired;
     }
 
     /**
@@ -509,26 +558,98 @@ class ImgPro_CDN_Files {
     /**
      * Record a successful upload
      *
+     * The row may have been retired by another request (the attachment was
+     * deleted or regenerated) while the file uploaded. The new copy is then
+     * queued for deletion instead of being left untracked in the App.
+     *
      * @param object $row Table row.
      * @param string $imgpro_id img.pro image id.
      * @param string $url       img.pro image URL.
-     * @return void
+     * @return bool Whether the row was still pending and is now synced.
      */
     public static function mark_synced($row, $imgpro_id, $url) {
         global $wpdb;
 
-        $wpdb->update(
+        $updated = $wpdb->update(
             self::table(),
             [
                 'status'     => self::STATUS_SYNCED,
                 'imgpro_id'  => substr((string) $imgpro_id, 0, 64),
                 'url'        => esc_url_raw($url),
+                'attempts'   => 0,
                 'error'      => null,
                 'updated_at' => current_time('mysql', true),
             ],
-            ['id' => (int) $row->id]
+            ['id' => (int) $row->id, 'status' => self::STATUS_PENDING]
         );
         self::flush_cache([$row->file]);
+
+        if (!$updated) {
+            self::queue_deletion($imgpro_id, $row);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Queue an img.pro image that no row tracks for deletion
+     *
+     * @param string $imgpro_id img.pro image id.
+     * @param object $row       Row the image was uploaded for.
+     * @return void
+     */
+    public static function queue_deletion($imgpro_id, $row) {
+        global $wpdb;
+
+        $wpdb->insert(self::table(), [
+            'attachment_id' => (int) $row->attachment_id,
+            'file'          => (string) $row->file,
+            'file_hash'     => null,
+            'status'        => self::STATUS_DELETE,
+            'imgpro_id'     => substr((string) $imgpro_id, 0, 64),
+            'updated_at'    => current_time('mysql', true),
+        ]);
+    }
+
+    /**
+     * Count an upload attempt before it starts
+     *
+     * A request that dies mid-upload (memory or time limit) never reaches
+     * the error handling, so the attempt is recorded first. Otherwise one
+     * such file would be retried first on every run, forever.
+     *
+     * @param object $row Table row.
+     * @return void
+     */
+    public static function note_attempt($row) {
+        self::set_attempts($row, (int) $row->attempts + 1);
+    }
+
+    /**
+     * Set a row's attempt count
+     *
+     * @param object $row      Table row.
+     * @param int    $attempts Attempts.
+     * @return void
+     */
+    public static function set_attempts($row, $attempts) {
+        global $wpdb;
+        $wpdb->update(self::table(), ['attempts' => max(0, (int) $attempts)], ['id' => (int) $row->id]);
+    }
+
+    /**
+     * Record a file's current size and modification time
+     *
+     * @param object $row   Table row, updated in place.
+     * @param int    $bytes File size.
+     * @param int    $mtime Modification time.
+     * @return void
+     */
+    public static function update_file_stats($row, $bytes, $mtime) {
+        global $wpdb;
+        $wpdb->update(self::table(), ['file_bytes' => (int) $bytes, 'file_mtime' => (int) $mtime], ['id' => (int) $row->id]);
+        $row->file_bytes = (int) $bytes;
+        $row->file_mtime = (int) $mtime;
     }
 
     /**
@@ -618,16 +739,31 @@ class ImgPro_CDN_Files {
         );
 
         foreach ((array) $rows as $row) {
-            $wpdb->delete($table, ['id' => (int) $row['id']]);
-            unset($row['id']);
-            $row['status']     = self::STATUS_PENDING;
-            $row['attempts']   = 0;
-            $row['error']      = null;
-            $row['updated_at'] = current_time('mysql', true);
-            $wpdb->insert($table, $row);
+            self::requeue((object) $row, 0);
         }
 
         return count((array) $rows);
+    }
+
+    /**
+     * Queue a row again under a new ID, which gives it a new idempotency key
+     *
+     * @param object $row      Table row.
+     * @param int    $attempts Attempt count to carry over.
+     * @return void
+     */
+    public static function requeue($row, $attempts) {
+        global $wpdb;
+        $table = self::table();
+
+        $data = (array) $row;
+        $wpdb->delete($table, ['id' => (int) $data['id']]);
+        unset($data['id']);
+        $data['status']     = self::STATUS_PENDING;
+        $data['attempts']   = (int) $attempts;
+        $data['error']      = null;
+        $data['updated_at'] = current_time('mysql', true);
+        $wpdb->insert($table, $data);
     }
 
     /**

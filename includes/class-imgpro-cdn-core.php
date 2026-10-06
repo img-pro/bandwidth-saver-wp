@@ -139,6 +139,9 @@ class ImgPro_CDN_Core {
 
         // Handle plugin upgrades
         add_action('admin_init', [$this, 'check_version']);
+
+        // Drop a subsite's file map when the subsite is deleted
+        add_filter('wpmu_drop_tables', ['ImgPro_CDN_Files', 'drop_site_table'], 10, 2);
     }
 
     /**
@@ -235,6 +238,10 @@ class ImgPro_CDN_Core {
         ImgPro_CDN_Security::grant_capability_to_admins();
 
         ImgPro_CDN_Files::install();
+
+        // Catch up on uploads and deletions made while the plugin was inactive
+        $sync = new ImgPro_CDN_Sync(new ImgPro_CDN_Settings());
+        $sync->restart_scan();
 
         /**
          * Fires after ImgPro CDN activation

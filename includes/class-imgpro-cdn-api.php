@@ -123,17 +123,20 @@ class ImgPro_CDN_API {
             'metadata' => wp_json_encode((object) $metadata),
         ];
 
-        $body = '';
+        $head = '';
         foreach ($fields as $name => $value) {
-            $body .= '--' . $boundary . "\r\n";
-            $body .= 'Content-Disposition: form-data; name="' . $name . '"' . "\r\n\r\n";
-            $body .= $value . "\r\n";
+            $head .= '--' . $boundary . "\r\n";
+            $head .= 'Content-Disposition: form-data; name="' . $name . '"' . "\r\n\r\n";
+            $head .= $value . "\r\n";
         }
-        $body .= '--' . $boundary . "\r\n";
-        $body .= 'Content-Disposition: form-data; name="file"; filename="' . $filename . '"' . "\r\n";
-        $body .= 'Content-Type: ' . $mime . "\r\n\r\n";
-        $body .= $contents . "\r\n";
-        $body .= '--' . $boundary . "--\r\n";
+        $head .= '--' . $boundary . "\r\n";
+        $head .= 'Content-Disposition: form-data; name="file"; filename="' . $filename . '"' . "\r\n";
+        $head .= 'Content-Type: ' . $mime . "\r\n\r\n";
+
+        // Build the body in one step and drop the file copy, so only one
+        // copy of the file is held before the HTTP layer makes its own
+        $body = $head . $contents . "\r\n--" . $boundary . "--\r\n";
+        unset($contents);
 
         return $this->request('POST', '/images', [
             'headers' => [

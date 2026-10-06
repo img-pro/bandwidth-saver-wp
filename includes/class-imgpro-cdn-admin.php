@@ -266,6 +266,7 @@ class ImgPro_CDN_Admin {
             if ($this->settings->is_connected()) {
                 $this->render_connected();
             } else {
+                $this->render_leftover_notice();
                 $this->render_connect_card();
             }
             ?>
@@ -326,6 +327,7 @@ class ImgPro_CDN_Admin {
         $usage   = self::get_usage($this->settings);
 
         $this->render_pause_notice($status);
+        $this->render_address_notice();
         ?>
         <div class="imgpro-card">
             <div class="imgpro-toggle-row">
@@ -380,7 +382,7 @@ class ImgPro_CDN_Admin {
             <h2><?php esc_html_e('Disconnect', 'bandwidth-saver'); ?></h2>
             <p class="imgpro-muted"><?php esc_html_e('Disconnecting stops serving images from img.pro and forgets your API key. Choose whether the copies in your img.pro App should be kept or deleted.', 'bandwidth-saver'); ?></p>
             <div class="imgpro-actions">
-                <button type="button" class="button" id="imgpro-disconnect" <?php disabled($removing); ?>><?php esc_html_e('Disconnect and keep images', 'bandwidth-saver'); ?></button>
+                <button type="button" class="button" id="imgpro-disconnect"><?php esc_html_e('Disconnect and keep images', 'bandwidth-saver'); ?></button>
                 <button type="button" class="button imgpro-button-danger" id="imgpro-remove-all" <?php disabled($removing); ?>><?php esc_html_e('Delete images from img.pro and disconnect', 'bandwidth-saver'); ?></button>
             </div>
         </div>
@@ -428,6 +430,63 @@ class ImgPro_CDN_Admin {
                     ?>
                 </p>
             <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Banner shown when the site's address no longer matches its label
+     *
+     * The label stored at connection keeps identifying the site's images
+     * after a move. A copy of the site (a staging site, say) inherits the
+     * same key, label and file map, so deleting media there would delete
+     * the original site's images.
+     *
+     * @since 2.0.0
+     * @return void
+     */
+    private function render_address_notice() {
+        $label   = ImgPro_CDN_Settings::get_site_label();
+        $current = ImgPro_CDN_Settings::current_site_label();
+        if ($label === $current) {
+            return;
+        }
+        ?>
+        <div class="imgpro-alert imgpro-alert-warning" role="status">
+            <p>
+                <?php
+                /* translators: 1: address the site connected from, 2: the site's current address */
+                printf(esc_html__('This site connected to img.pro as %1$s, but its address is now %2$s.', 'bandwidth-saver'), '<strong>' . esc_html($label) . '</strong>', '<strong>' . esc_html($current) . '</strong>');
+                ?>
+            </p>
+            <p><?php esc_html_e('If you moved the site, there is nothing to do: its images on img.pro keep the old address as their label.', 'bandwidth-saver'); ?></p>
+            <p><?php esc_html_e('If this is a copy of another site, such as a staging site, click "Disconnect and keep images" below. While connected, deleting media here also deletes the original site\'s images from img.pro.', 'bandwidth-saver'); ?></p>
+        </div>
+        <?php
+    }
+
+    /**
+     * Banner shown after "delete images" finished with some images left
+     *
+     * @since 2.0.0
+     * @return void
+     */
+    private function render_leftover_notice() {
+        $leftover = (int) get_option(ImgPro_CDN_Sync::LEFTOVER_OPTION, 0);
+        if ($leftover < 1) {
+            return;
+        }
+        ?>
+        <div class="imgpro-alert imgpro-alert-warning" role="status">
+            <p>
+                <?php
+                printf(
+                    /* translators: %s: number of images */
+                    esc_html(_n('%s image could not be deleted from img.pro. You can delete it in your img.pro App.', '%s images could not be deleted from img.pro. You can delete them in your img.pro App.', $leftover, 'bandwidth-saver')),
+                    esc_html(number_format_i18n($leftover))
+                );
+                ?>
+            </p>
         </div>
         <?php
     }

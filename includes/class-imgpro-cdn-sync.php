@@ -70,6 +70,13 @@ class ImgPro_CDN_Sync {
     const MAX_ATTEMPTS = 5;
 
     /**
+     * Option holding how many images the last removal could not delete
+     *
+     * @var string
+     */
+    const LEFTOVER_OPTION = 'imgpro_cdn_removal_leftover';
+
+    /**
      * Settings instance
      *
      * @var ImgPro_CDN_Settings
@@ -107,6 +114,7 @@ class ImgPro_CDN_Sync {
     public function register_hooks() {
         add_filter('wp_update_attachment_metadata', [$this, 'on_metadata_update'], 99, 2);
         add_action('delete_attachment', [$this, 'on_delete_attachment'], 10, 1);
+        add_filter('wp_delete_file', [$this, 'on_delete_file'], PHP_INT_MAX);
         add_action('shutdown', [$this, 'reconcile_dirty']);
         add_action(self::CRON_HOOK, [$this, 'run_cron']);
         add_action(self::CRON_HOOK . '_hourly', [$this, 'run_cron']);
@@ -151,18 +159,43 @@ class ImgPro_CDN_Sync {
     }
 
     /**
-     * Queue an attachment's img.pro copies for deletion
+     * Stop tracking metadata changes of an attachment being deleted
+     *
+     * Its img.pro copies are queued for deletion file by file, as
+     * WordPress deletes each file (see on_delete_file()).
      *
      * @param int $attachment_id Attachment ID.
      * @return void
      */
     public function on_delete_attachment($attachment_id) {
-        if (!$this->settings->is_connected()) {
-            return;
-        }
         unset($this->dirty[(int) $attachment_id]);
-        ImgPro_CDN_Files::forget_attachment($attachment_id);
-        self::schedule_soon();
+    }
+
+    /**
+     * Queue the img.pro copy of a file WordPress is deleting
+     *
+     * Runs last on the wp_delete_file filter, so files another plugin
+     * keeps (media translations share files) keep their copies too.
+     *
+     * @param string $file Absolute path, or empty when deletion was cancelled.
+     * @return string Unchanged path.
+     */
+    public function on_delete_file($file) {
+        if (!is_string($file) || '' === $file || !$this->settings->is_connected()) {
+            return $file;
+        }
+
+        $basedir = ImgPro_CDN_Files::get_basedir() . '/';
+        $path    = wp_normalize_path($file);
+        if (0 !== strpos($path, $basedir)) {
+            return $file;
+        }
+
+        if (ImgPro_CDN_Files::retire_file(substr($path, strlen($basedir)))) {
+            self::schedule_soon();
+        }
+
+        return $file;
     }
 
     /**
@@ -191,8 +224,11 @@ class ImgPro_CDN_Sync {
         }
 
         if (!$this->acquire_lock()) {
-            return ['more' => true, 'locked' => true];
+            return ['more' => true, 'locked' => true, 'wait' => 10];
         }
+
+        // Uploads hold a whole file in memory; ask for the admin memory limit
+        wp_raise_memory_limit('imgpro_cdn');
 
         $max_execution = (int) ini_get('max_execution_time');
         if ($max_execution > 0) {
@@ -204,16 +240,16 @@ class ImgPro_CDN_Sync {
             $api   = new ImgPro_CDN_API($this->settings->get_api_key());
             $state = self::get_state();
 
-            if ($this->settings->get('removing')) {
-                return $this->remove_step($api, $deadline);
-            }
-
             if ((int) $state['wait_until'] > time()) {
                 return ['more' => true, 'wait' => (int) $state['wait_until'] - time()];
             }
 
             if (ImgPro_CDN_Settings::PAUSE_AUTH === $this->settings->get('pause_reason')) {
                 return ['more' => false];
+            }
+
+            if ($this->settings->get('removing')) {
+                return $this->remove_step($api, $deadline);
             }
 
             if (!$this->delete_step($api, $deadline)) {
@@ -364,6 +400,7 @@ class ImgPro_CDN_Sync {
             }
 
             if (count($ids) < self::BACKFILL_BATCH) {
+                ImgPro_CDN_Files::retire_orphans();
                 $state['backfill_done'] = true;
                 break;
             }
@@ -478,9 +515,38 @@ class ImgPro_CDN_Sync {
                     return true;
                 }
 
+                // The admin may have paused, disconnected or started removal
+                // while this run was busy
+                $this->settings->refresh();
+                if (!$this->settings->can_sync()) {
+                    return true;
+                }
+
                 $path = $basedir . '/' . $row->file;
                 if (!file_exists($path)) {
                     ImgPro_CDN_Files::mark_skipped($row, __('The file is missing from the uploads folder.', 'bandwidth-saver'));
+                    continue;
+                }
+
+                // Every earlier attempt was cut off before it could fail cleanly
+                if ((int) $row->attempts >= self::MAX_ATTEMPTS) {
+                    ImgPro_CDN_Files::mark_attempt_failed($row, __('The upload kept stopping before it finished. The file may be too large for this server\'s memory or time limits.', 'bandwidth-saver'), true);
+                    continue;
+                }
+
+                // Keep the idempotency key and metadata in step with the file
+                clearstatcache(true, $path);
+                $bytes = (int) filesize($path);
+                $mtime = (int) filemtime($path);
+                if ($bytes !== (int) $row->file_bytes || $mtime !== (int) $row->file_mtime) {
+                    ImgPro_CDN_Files::update_file_stats($row, $bytes, $mtime);
+                }
+                if ($bytes > ImgPro_CDN_API::MAX_FILE_BYTES) {
+                    ImgPro_CDN_Files::mark_skipped($row, __('The file is larger than the 20 MB img.pro accepts.', 'bandwidth-saver'));
+                    continue;
+                }
+                if (!self::has_memory_for($bytes)) {
+                    ImgPro_CDN_Files::mark_attempt_failed($row, __('This server\'s PHP memory limit is too low to upload this file.', 'bandwidth-saver'), true);
                     continue;
                 }
 
@@ -495,6 +561,7 @@ class ImgPro_CDN_Sync {
                 ];
                 $key = 'bs-' . md5($state['generation'] . '|' . $row->id . '|' . $row->file . '|' . $row->file_bytes . '|' . $row->file_mtime);
 
+                ImgPro_CDN_Files::note_attempt($row);
                 $image = $api->upload_file($path, $labels, $metadata, $key);
 
                 if (is_wp_error($image)) {
@@ -518,7 +585,27 @@ class ImgPro_CDN_Sync {
     }
 
     /**
+     * Whether this request has enough memory left to upload a file
+     *
+     * The multipart body holds the whole file, and the HTTP layer copies
+     * it again, so allow about three times the file size.
+     *
+     * @param int $bytes File size.
+     * @return bool
+     */
+    private static function has_memory_for($bytes) {
+        $limit = wp_convert_hr_to_bytes((string) ini_get('memory_limit'));
+        if ($limit <= 0) {
+            return true;
+        }
+        return ($limit - memory_get_usage(true)) > ($bytes * 3 + 8 * MB_IN_BYTES);
+    }
+
+    /**
      * Handle a failed upload
+     *
+     * The attempt was already counted by note_attempt(); failures that are
+     * not the file's fault give it back.
      *
      * @param object   $row   Table row.
      * @param WP_Error $error API error.
@@ -529,20 +616,26 @@ class ImgPro_CDN_Sync {
         $status = (int) ($data['status'] ?? 0);
         $code   = $error->get_error_code();
 
+        // The body changed since an earlier attempt with this key (the file
+        // was rewritten in place): queue it again under a new key
+        if (in_array($code, ['idempotency_key_conflict', 'idempotency_recovery_conflict'], true)) {
+            ImgPro_CDN_Files::requeue($row, (int) $row->attempts + 1);
+            return true;
+        }
+
         // Problems with this one file
-        $permanent_codes = ['validation_error', 'media_failed', 'media_blocked', 'file_unreadable', 'idempotency_key_conflict', 'idempotency_recovery_conflict'];
+        $permanent_codes = ['validation_error', 'media_failed', 'media_blocked', 'file_unreadable'];
         if (in_array($code, $permanent_codes, true) || 422 === $status) {
             ImgPro_CDN_Files::mark_attempt_failed($row, $error->get_error_message(), true);
             return true;
         }
 
-        if ('upload_failed' === $code) {
-            ImgPro_CDN_Files::mark_attempt_failed($row, $error->get_error_message(), false, self::MAX_ATTEMPTS);
-            return true;
-        }
-
         // Problems with the key, App, quota or service: stop the run
-        if (!$this->handle_error($error)) {
+        if ($this->handle_error($error)) {
+            // Pauses and rate limits are not the file's fault
+            ImgPro_CDN_Files::set_attempts($row, (int) $row->attempts);
+        } else {
+            // Server and connection errors: count the attempt and back off
             ImgPro_CDN_Files::mark_attempt_failed($row, $error->get_error_message(), false, self::MAX_ATTEMPTS);
         }
         return false;
@@ -627,49 +720,83 @@ class ImgPro_CDN_Sync {
     /**
      * Delete every image this site uploaded, then disconnect
      *
+     * Lists the first page of this site's images and deletes it, until the
+     * list is empty. Images img.pro refuses to delete are remembered and
+     * skipped, so one stubborn image cannot keep the removal going forever.
+     *
      * @param ImgPro_CDN_API $api      API client.
      * @param float          $deadline Unix time to stop at.
      * @return array Run summary.
      */
     private function remove_step($api, $deadline) {
-        $site = ImgPro_CDN_Settings::get_site_label();
+        $site  = ImgPro_CDN_Settings::get_site_label();
+        $state = self::get_state();
+        $skip  = array_flip((array) $state['remove_skip']);
 
         while (microtime(true) < $deadline) {
-            $page = $api->list_images(['site' => $site], 100);
+            $page = $api->list_images(['site' => $site], 100, $state['remove_cursor'] ? $state['remove_cursor'] : null);
             if (is_wp_error($page)) {
+                self::save_state($state);
                 $this->handle_error($page);
                 return $this->stopped_result();
             }
 
             $ids = [];
             foreach ((array) ($page['data'] ?? []) as $image) {
-                if (!empty($image['id'])) {
+                if (!empty($image['id']) && !isset($skip[(string) $image['id']])) {
                     $ids[] = (string) $image['id'];
                 }
             }
 
             if (empty($ids)) {
-                $this->finish_removal();
+                $cursor = $page['pagination']['next_cursor'] ?? null;
+                if (!empty($page['pagination']['has_more']) && !empty($cursor)) {
+                    // Only images that could not be deleted on this page
+                    $state['remove_cursor'] = (string) $cursor;
+                    continue;
+                }
+                $this->finish_removal(count($skip));
                 return ['more' => false];
             }
 
             $result = $api->delete_images($ids);
             if (is_wp_error($result)) {
+                self::save_state($state);
                 $this->handle_error($result);
                 return $this->stopped_result();
             }
+
+            foreach ((array) ($result['errors'] ?? []) as $error) {
+                $code = $error['error']['code'] ?? '';
+                if (!empty($error['id']) && 'not_found' !== $code) {
+                    $skip[(string) $error['id']] = true;
+                }
+            }
+            $state['remove_skip'] = array_slice(array_keys($skip), 0, 1000);
+
+            // The listing shifted, so start again from the first page
+            $state['remove_cursor'] = '';
         }
 
+        self::save_state($state);
         return ['more' => true];
     }
 
     /**
      * Forget the connection once every image is removed
      *
+     * @param int $leftover Images img.pro would not delete.
      * @return void
      */
-    private function finish_removal() {
-        $this->disconnect();
+    private function finish_removal($leftover) {
+        if ($leftover > 0) {
+            update_option(self::LEFTOVER_OPTION, (int) $leftover, false);
+        }
+        $this->disconnect(false);
+        if (0 === (int) $leftover) {
+            // Nothing of this site is left in the App; label future uploads afresh
+            $this->settings->update(['site_label' => '']);
+        }
     }
 
     /**
@@ -677,12 +804,40 @@ class ImgPro_CDN_Sync {
      *
      * The key may belong to a different App, so the local map starts
      * over; files already in the App are found again by the adopt step.
+     * Queued deletions are kept: they still name images in the old App.
      *
      * @return void
      */
     public function start() {
-        ImgPro_CDN_Files::clear();
+        ImgPro_CDN_Files::clear(true);
         self::save_state(self::default_state());
+        delete_option(self::LEFTOVER_OPTION);
+        if (!$this->settings->get('site_label')) {
+            $this->settings->update(['site_label' => ImgPro_CDN_Settings::current_site_label()]);
+        }
+        self::schedule_recurring();
+        self::schedule_soon();
+    }
+
+    /**
+     * Rescan the library after the plugin was inactive
+     *
+     * Attachments added or deleted meanwhile were not tracked, and the
+     * database may have been restored from a backup, so files are matched
+     * against the App again before anything is uploaded.
+     *
+     * @return void
+     */
+    public function restart_scan() {
+        if (!$this->settings->is_connected()) {
+            return;
+        }
+        $state = self::get_state();
+        $state['backfill_cursor'] = 0;
+        $state['backfill_done']   = false;
+        $state['adopt_cursor']    = '';
+        $state['adopt_done']      = false;
+        self::save_state($state);
         self::schedule_recurring();
         self::schedule_soon();
     }
@@ -692,10 +847,11 @@ class ImgPro_CDN_Sync {
      *
      * Images stay in the img.pro App.
      *
+     * @param bool $keep_deletions Keep queued deletions for the next connection.
      * @return void
      */
-    public function disconnect() {
-        ImgPro_CDN_Files::clear();
+    public function disconnect($keep_deletions = true) {
+        ImgPro_CDN_Files::clear($keep_deletions);
         delete_option(self::STATE_OPTION);
         self::unschedule();
         $this->settings->update([
@@ -722,7 +878,9 @@ class ImgPro_CDN_Sync {
         ]);
         ImgPro_CDN_Files::flush_cache();
         $state = self::get_state();
-        $state['wait_until'] = 0;
+        $state['wait_until']    = 0;
+        $state['remove_cursor'] = '';
+        $state['remove_skip']   = [];
         self::save_state($state);
         self::schedule_soon();
     }
@@ -737,11 +895,13 @@ class ImgPro_CDN_Sync {
         $state  = self::get_state();
         $pause  = $this->settings->get('pause_reason');
 
-        if ($this->settings->get('removing')) {
+        $waiting = (int) $state['wait_until'] > time();
+
+        if ($this->settings->get('removing') && ImgPro_CDN_Settings::PAUSE_AUTH !== $pause && !$waiting) {
             $phase = 'removing';
-        } elseif (ImgPro_CDN_Settings::PAUSE_NONE !== $pause) {
+        } elseif (ImgPro_CDN_Settings::PAUSE_NONE !== $pause && ($this->settings->get('removing') ? ImgPro_CDN_Settings::PAUSE_AUTH === $pause : true)) {
             $phase = 'paused';
-        } elseif ((int) $state['wait_until'] > time()) {
+        } elseif ($waiting) {
             $phase = 'waiting';
         } elseif (empty($state['backfill_done'])) {
             $phase = 'scanning';
@@ -787,6 +947,8 @@ class ImgPro_CDN_Sync {
             'adopt_done'      => false,
             'wait_until'      => 0,
             'last_error'      => '',
+            'remove_cursor'   => '',
+            'remove_skip'     => [],
         ];
     }
 
