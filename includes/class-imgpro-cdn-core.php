@@ -14,11 +14,36 @@ if (!defined('ABSPATH')) {
  * Main plugin orchestrator class
  *
  * Implements singleton pattern to manage plugin lifecycle and coordinate
- * between Settings, Rewriter, and Admin components.
+ * between Settings, Sync, Rewriter and Admin components.
  *
  * @since 0.1.0
  */
 class ImgPro_CDN_Core {
+
+    /**
+     * Option set when upgrading from 1.x, until the admin connects a key
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const UPGRADE_NOTICE_OPTION = 'imgpro_cdn_v2_notice';
+
+    /**
+     * When the plugin was last activated (per site, or network-wide as a
+     * site option)
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const ACTIVATED_OPTION = 'imgpro_cdn_activated';
+
+    /**
+     * The activation this site last caught up with
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const CAUGHT_UP_OPTION = 'imgpro_cdn_caught_up';
 
     /**
      * Plugin instance
@@ -35,6 +60,14 @@ class ImgPro_CDN_Core {
      * @var ImgPro_CDN_Settings
      */
     private $settings;
+
+    /**
+     * Sync instance
+     *
+     * @since 2.0.0
+     * @var ImgPro_CDN_Sync
+     */
+    private $sync;
 
     /**
      * Rewriter instance
@@ -59,6 +92,14 @@ class ImgPro_CDN_Core {
      * @var ImgPro_CDN_Admin_Ajax|null
      */
     private $admin_ajax;
+
+    /**
+     * Media Library integration instance
+     *
+     * @since 2.0.0
+     * @var ImgPro_CDN_Media
+     */
+    private $media;
 
     /**
      * Get plugin instance
@@ -89,23 +130,30 @@ class ImgPro_CDN_Core {
      * @return void
      */
     private function init() {
-        // Initialize settings
         $this->settings = new ImgPro_CDN_Settings();
 
-        // Initialize rewriter
+        // Create the file map table on first load (covers multisite subsites)
+        ImgPro_CDN_Files::maybe_install();
+
+        $this->sync = new ImgPro_CDN_Sync($this->settings);
+        $this->sync->register_hooks();
+        $this->catch_up_after_activation();
+
         $this->rewriter = new ImgPro_CDN_Rewriter($this->settings);
         $this->rewriter->init();
 
-        // Initialize admin (only in admin area)
+        // Also outside wp-admin, where front-end editors open the media modal
+        $this->media = new ImgPro_CDN_Media($this->settings, $this->sync);
+        $this->media->register_hooks();
+
         if (is_admin()) {
-            $this->admin = new ImgPro_CDN_Admin($this->settings);
+            $this->admin = new ImgPro_CDN_Admin($this->settings, $this->sync);
             $this->admin->register_hooks();
 
-            $this->admin_ajax = new ImgPro_CDN_Admin_Ajax($this->settings);
+            $this->admin_ajax = new ImgPro_CDN_Admin_Ajax($this->settings, $this->sync);
             $this->admin_ajax->register_hooks();
         }
 
-        // Register core hooks
         $this->register_hooks();
     }
 
@@ -122,53 +170,8 @@ class ImgPro_CDN_Core {
         // Handle plugin upgrades
         add_action('admin_init', [$this, 'check_version']);
 
-        // Enqueue frontend assets
-        add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
-    }
-
-    /**
-     * Enqueue frontend assets
-     *
-     * Loads CSS to prevent broken image flash and JavaScript for
-     * lazy loading handling, error fallback, and dynamic content support.
-     *
-     * @since 0.1.0
-     * @return void
-     */
-    public function enqueue_frontend_assets() {
-        // Only enqueue if CDN is active (mode-specific enabled state)
-        if (!ImgPro_CDN_Settings::is_cdn_active($this->settings->get_all())) {
-            return;
-        }
-
-        // Enqueue frontend CSS (prevents broken image flash)
-        $css_file = IMGPRO_CDN_PLUGIN_DIR . 'assets/css/imgpro-cdn-frontend.css';
-        if (file_exists($css_file)) {
-            wp_enqueue_style(
-                'imgpro-cdn-frontend',
-                IMGPRO_CDN_PLUGIN_URL . 'assets/css/imgpro-cdn-frontend.css',
-                [],
-                IMGPRO_CDN_VERSION,
-                'all'
-            );
-        }
-
-        // Enqueue frontend JavaScript (lazy loading, error handling, dynamic content)
-        $js_file = IMGPRO_CDN_PLUGIN_DIR . 'assets/js/imgpro-cdn.js';
-        if (file_exists($js_file)) {
-            wp_enqueue_script(
-                'imgpro-cdn',
-                IMGPRO_CDN_PLUGIN_URL . 'assets/js/imgpro-cdn.js',
-                [],
-                IMGPRO_CDN_VERSION,
-                false // Load in header
-            );
-
-            // Pass config to JavaScript
-            wp_localize_script('imgpro-cdn', 'imgproCdnConfig', [
-                'debug' => $this->settings->get('debug_mode', false),
-            ]);
-        }
+        // Drop a subsite's file map when the subsite is deleted
+        add_filter('wpmu_drop_tables', ['ImgPro_CDN_Files', 'drop_site_table'], 10, 2);
     }
 
     /**
@@ -211,9 +214,13 @@ class ImgPro_CDN_Core {
      * @return void
      */
     private function upgrade($old_version) {
-        // SECURITY: Migrate plaintext API keys to encrypted storage
-        // This runs on every upgrade to ensure all keys are encrypted
-        $this->maybe_encrypt_api_key();
+        if ($old_version && version_compare($old_version, '2.0.0', '<')) {
+            self::remove_legacy_data();
+            $this->settings->reset();
+            update_option(self::UPGRADE_NOTICE_OPTION, 1, false);
+        }
+
+        ImgPro_CDN_Files::install();
 
         /**
          * Fires after ImgPro CDN upgrade routines have completed
@@ -226,53 +233,45 @@ class ImgPro_CDN_Core {
     }
 
     /**
-     * Encrypt existing plaintext API key if needed
+     * Delete data left by 1.x (managed CDN account, billing and usage caches)
      *
-     * SECURITY: Migrates plaintext API keys to encrypted storage.
-     * Safe to run multiple times - skips already encrypted keys.
+     * 2.0 is a clean break: the managed CDN and self-hosted worker are gone,
+     * and sites connect their own img.pro App instead.
      *
-     * @since 0.2.0
+     * @since 2.0.0
      * @return void
      */
-    private function maybe_encrypt_api_key() {
-        $settings = get_option(ImgPro_CDN_Settings::OPTION_KEY, []);
-
-        if (empty($settings['cloud_api_key'])) {
-            return;
+    public static function remove_legacy_data() {
+        $batched_key = get_option('imgpro_cdn_batched_cache_key');
+        if ($batched_key) {
+            delete_transient($batched_key);
         }
+        delete_option('imgpro_cdn_batched_cache_key');
 
-        // Skip if already encrypted
-        if (ImgPro_CDN_Crypto::is_encrypted($settings['cloud_api_key'])) {
-            return;
+        foreach (['imgpro_cdn_pending_payment', 'imgpro_cdn_tiers', 'imgpro_cdn_site_data', 'imgpro_cdn_payment_pending_recovery', 'imgpro_cdn_last_sync'] as $transient) {
+            delete_transient($transient);
         }
-
-        // Encrypt the API key
-        $settings['cloud_api_key'] = ImgPro_CDN_Crypto::encrypt($settings['cloud_api_key']);
-
-        // Save without triggering validation (already sanitized)
-        update_option(ImgPro_CDN_Settings::OPTION_KEY, $settings);
-
-        // Clear settings cache
-        $this->settings->clear_cache();
     }
 
     /**
      * Plugin activation
      *
+     * Only records the activation. Each site catches up the next time it
+     * loads the plugin (see catch_up_after_activation()), which also covers
+     * network activation, where this runs for one site only, and WP-CLI,
+     * where no user is signed in.
+     *
      * @since 0.1.0
+     * @param bool $network_wide Whether the plugin was activated for the network.
      * @return void
      */
-    public static function activate() {
-        // Check capabilities (shouldn't be needed but defense in depth)
-        if (!current_user_can('activate_plugins')) {
-            return;
+    public static function activate($network_wide = false) {
+        if ($network_wide && is_multisite()) {
+            update_site_option(self::ACTIVATED_OPTION, time());
+        } else {
+            // Read on every request by catch_up_after_activation(), so autoload it
+            update_option(self::ACTIVATED_OPTION, time(), true);
         }
-
-        // SECURITY: Grant custom capability to administrators
-        ImgPro_CDN_Security::grant_capability_to_admins();
-
-        // Store plugin version (autoload=false for performance)
-        update_option('imgpro_cdn_version', IMGPRO_CDN_VERSION, false);
 
         /**
          * Fires after ImgPro CDN activation
@@ -281,16 +280,47 @@ class ImgPro_CDN_Core {
     }
 
     /**
+     * Catch up on what changed while the plugin was inactive
+     *
+     * Runs once per site after each activation: grants the capability,
+     * creates the table, and rescans the library, since uploads and
+     * deletions made meanwhile were not tracked.
+     *
+     * @since 2.0.0
+     * @return void
+     */
+    private function catch_up_after_activation() {
+        $activated = (int) get_option(self::ACTIVATED_OPTION, 0);
+        if (is_multisite()) {
+            $activated = max($activated, (int) get_site_option(self::ACTIVATED_OPTION, 0));
+        }
+        if (!$activated || (int) get_option(self::CAUGHT_UP_OPTION, 0) >= $activated) {
+            return;
+        }
+        update_option(self::CAUGHT_UP_OPTION, $activated, true);
+
+        // SECURITY: Grant custom capability to administrators
+        ImgPro_CDN_Security::grant_capability_to_admins();
+        ImgPro_CDN_Files::install();
+        $this->sync->restart_scan();
+    }
+
+    /**
      * Plugin deactivation
+     *
+     * Stops background syncing. Settings, the file map and the images on
+     * img.pro are kept so reactivating picks up where it left off.
      *
      * @since 0.1.0
      * @return void
      */
     public static function deactivate() {
-        // Check capabilities
-        if (!current_user_can('activate_plugins')) {
-            return;
-        }
+        // On network deactivation this runs for one site; other sites'
+        // events find no callback and are cleared by the next activation
+        ImgPro_CDN_Sync::unschedule();
+        // The worker lock stays: a run still working releases its own, and
+        // one that died expires (see ImgPro_CDN_Sync::LOCK_TTL). Deleting it
+        // would let a run after a quick reactivation work alongside it.
 
         /**
          * Fires after ImgPro CDN deactivation
@@ -306,6 +336,16 @@ class ImgPro_CDN_Core {
      */
     public function get_settings() {
         return $this->settings;
+    }
+
+    /**
+     * Get sync instance
+     *
+     * @since 2.0.0
+     * @return ImgPro_CDN_Sync Sync instance.
+     */
+    public function get_sync() {
+        return $this->sync;
     }
 
     /**

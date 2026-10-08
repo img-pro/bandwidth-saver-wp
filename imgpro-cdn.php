@@ -2,9 +2,9 @@
 /**
  * Plugin Name: Bandwidth Saver: Image CDN
  * Plugin URI: https://github.com/img-pro/bandwidth-saver-wp
- * Description: Image CDN for WordPress. Serve images from 300+ global edge servers. Faster Core Web Vitals, better SEO. $9.99/mo.
- * Version: 1.1.3
- * Author: ImgPro
+ * Description: Serve the images on your pages from your own img.pro App. Each image is copied the first time a page shows it.
+ * Version: 2.0.0
+ * Author: img.pro
  * Author URI: https://img.pro
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -46,7 +46,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
 
 // Define plugin constants
 if (!defined('IMGPRO_CDN_VERSION')) {
-    define('IMGPRO_CDN_VERSION', '1.1.3');
+    define('IMGPRO_CDN_VERSION', '2.0.0');
 }
 if (!defined('IMGPRO_CDN_PLUGIN_DIR')) {
     define('IMGPRO_CDN_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -66,11 +66,12 @@ require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-crypto.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-security.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-api.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-settings.php';
+require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-files.php';
+require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-sync.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-rewriter.php';
-require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-plan-selector.php';
-require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-onboarding.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-admin.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-admin-ajax.php';
+require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-media.php';
 require_once IMGPRO_CDN_PLUGIN_DIR . 'includes/class-imgpro-cdn-core.php';
 
 // Initialize the plugin
@@ -79,31 +80,3 @@ add_action('plugins_loaded', ['ImgPro_CDN_Core', 'get_instance']);
 // Activation and deactivation hooks
 register_activation_hook(__FILE__, ['ImgPro_CDN_Core', 'activate']);
 register_deactivation_hook(__FILE__, ['ImgPro_CDN_Core', 'deactivate']);
-
-/**
- * Add version info to HTML output for easy production verification
- * Only adds on frontend when not in admin
- *
- * @since 0.1.0
- * @return void
- */
-function imgpro_cdn_add_version_html() {
-    if (!is_admin()) {
-        echo "\n<!-- Image CDN by ImgPro v" . esc_attr(IMGPRO_CDN_VERSION) . " -->\n";
-    }
-}
-add_action('wp_footer', 'imgpro_cdn_add_version_html', 999);
-
-/**
- * Add version header to HTTP response for easy curl checking
- * Only adds on frontend when plugin is enabled
- *
- * @since 0.1.0
- * @return void
- */
-function imgpro_cdn_add_version_header() {
-    if (!is_admin() && !headers_sent()) {
-        header('X-Image-CDN-Version: ' . sanitize_text_field(IMGPRO_CDN_VERSION));
-    }
-}
-add_action('send_headers', 'imgpro_cdn_add_version_header');

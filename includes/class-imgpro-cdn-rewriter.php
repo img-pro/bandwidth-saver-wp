@@ -1,6 +1,6 @@
 <?php
 /**
- * ImgPro URL Rewriter
+ * ImgPro CDN URL Rewriter
  *
  * @package ImgPro_CDN
  * @since   0.1.0
@@ -11,19 +11,19 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * URL rewriting engine
+ * Swaps media library URLs for their img.pro copies on the frontend
  *
- * Transforms image URLs to point to CDN, handles context detection,
- * and processes various WordPress image output hooks.
+ * Only files that finished syncing are swapped; everything else keeps its
+ * original URL. Every swapped image carries its original URL so the
+ * browser can fall back to it if img.pro cannot serve the file.
  *
- * Image-only architecture (v1.1+):
- * - Supports images only (JPG, PNG, GIF, WebP, AVIF, SVG, etc.)
- * - Video/audio not processed - use Unlimited CDN plugin for media
+ * Images a page loads from other websites are copied too, when the site
+ * allows it: img.pro imports them from their address (see
+ * ImgPro_CDN_Files::get_remote_urls()). An img src on another host that
+ * WordPress matched to one of this site's own files (it then adds that
+ * file's srcset) is that file, and uses its copy.
  *
- * Single-domain architecture (v1.1.0+):
- * - CDN URL format: https://cdn-domain/origin-domain/path/to/image.jpg
- * - Worker serves images directly from R2 cache
- * - On CDN failure, onerror falls back to origin URL
+ * Rewriting happens at render time. Database content is never changed.
  *
  * @since 0.1.0
  */
@@ -38,15 +38,7 @@ class ImgPro_CDN_Rewriter {
     private $settings;
 
     /**
-     * URL cache
-     *
-     * @since 0.1.0
-     * @var array
-     */
-    private $url_cache = [];
-
-    /**
-     * Processing flag
+     * Prevents re-entrant content processing
      *
      * @since 0.1.0
      * @var bool
@@ -54,12 +46,135 @@ class ImgPro_CDN_Rewriter {
     private $processing = false;
 
     /**
-     * Context check cache (performance optimization)
+     * Cached result of is_unsafe_context()
      *
      * @since 0.1.0
      * @var bool|null
      */
     private $is_unsafe_context_cache = null;
+
+    /**
+     * Site the settings instance belongs to
+     *
+     * @since 2.0.0
+     * @var int
+     */
+    private $blog_id;
+
+    /**
+     * Uploads base URLs without scheme, by site ID,
+     * e.g. //example.com/wp-content/uploads/
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    private $upload_bases = [];
+
+    /**
+     * Whether other sites of a network serve from img.pro, by site ID
+     *
+     * @since 2.0.0
+     * @var bool[]
+     */
+    private $serving = [];
+
+    /**
+     * Whether images from other websites are copied, by site ID
+     *
+     * @since 2.0.0
+     * @var bool[]
+     */
+    private $remote = [];
+
+    /**
+     * Hosts that are this site's own, by site ID
+     *
+     * @since 2.0.0
+     * @var array
+     */
+    private $own_hosts = [];
+
+    /**
+     * URLs the last lookup swapped for copies of images from other websites
+     *
+     * @since 2.0.0
+     * @var bool[]
+     */
+    private $remote_hits = [];
+
+    /**
+     * Extensions of files img.pro does not accept, for addresses that name one
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    const UNSUPPORTED_EXTENSIONS = ['svg', 'svgz', 'bmp', 'ico', 'tif', 'tiff', 'eps', 'psd', 'pdf'];
+
+    /**
+     * Top-level domains that never resolve on the public internet, where
+     * img.pro could not fetch an image
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    const PRIVATE_TLDS = ['test', 'local', 'localhost', 'invalid', 'example', 'internal', 'lan', 'home', 'corp', 'intranet', 'arpa', 'localdomain'];
+
+    /**
+     * Query parameters of addresses that change from one view to the next
+     * (signed or expiring links, cache-busters); each would become a new copy
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    const VOLATILE_PARAMS = ['signature', 'sig', 'expires', 'expiry', 'exp', 'token', 'access_token', '__token__', 'hdnts', 'verify', 'authorization', 'policy', 'key-pair-id', 'hmac', 'oh', 'oe', 'se', 'st', 'sv', '_', 't', 'ts', 'time', 'timestamp', 'cb', 'cachebust', 'cachebuster', 'nocache', 'rand', 'random', 'rnd'];
+
+    /**
+     * Prefixes of such parameters (cloud storage signatures)
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    const VOLATILE_PARAM_PREFIXES = ['x-amz-', 'x-goog-', 'x-ms-'];
+
+    /**
+     * Hosts that serve tracking pixels and ads, whose requests have to keep
+     * reaching them, matched with their subdomains
+     *
+     * @since 2.0.0
+     * @var string[]
+     */
+    const TRACKING_HOSTS = [
+        // Ads and affiliate networks (Commission Junction serves from its many domains)
+        'amazon-adsystem.com', 'doubleclick.net', 'googlesyndication.com', 'googleadservices.com', 'adnxs.com', 'adsrvr.org', 'criteo.com', 'taboola.com', 'outbrain.com',
+        'awin1.com', 'shareasale.com', 'impactradius.com', 'pxf.io', 'sjv.io', 'linksynergy.com',
+        'tqlkg.com', 'ftjcfx.com', 'kqzyfj.com', 'jdoqocy.com', 'dpbolvw.net', 'anrdoezrs.net', 'tkqlhce.com', 'awltovhc.com', 'lduhtrp.net', 'emjcd.com',
+        // Analytics and social pixels
+        'google-analytics.com', 'googletagmanager.com', 'facebook.com', 'facebook.net', 'pixel.wp.com', 'stats.wp.com', 'scorecardresearch.com', 'quantserve.com', 'statcounter.com',
+        'yandex.ru', 'clarity.ms', 'hubspot.com', 'bing.com', 'pinterest.com', 'linkedin.com', 'twitter.com', 'x.com', 'tiktok.com', 'snapchat.com', 'reddit.com',
+    ];
+
+    /**
+     * Most images from other websites one request queues for copying
+     *
+     * @since 2.0.0
+     * @var int
+     */
+    const REMOTE_PER_REQUEST = 50;
+
+    /**
+     * Attributes that can hold an image URL or srcset
+     *
+     * @since 2.0.0
+     * @var array attribute => true when it holds a srcset
+     */
+    const URL_ATTRIBUTES = [
+        'src'              => false,
+        'srcset'           => true,
+        'data-src'         => false,
+        'data-srcset'      => true,
+        'data-lazy-src'    => false,
+        'data-lazy-srcset' => true,
+    ];
 
     /**
      * Constructor
@@ -69,6 +184,29 @@ class ImgPro_CDN_Rewriter {
      */
     public function __construct(ImgPro_CDN_Settings $settings) {
         $this->settings = $settings;
+        $this->blog_id  = get_current_blog_id();
+    }
+
+    /**
+     * Whether the site WordPress is rendering serves from img.pro
+     *
+     * Hooks are only registered when this instance's own site serves, but
+     * a network page can render another site's content inside
+     * switch_to_blog(); that site's own setting decides for its images.
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    private function is_serving_here() {
+        $blog_id = get_current_blog_id();
+        if ($blog_id === $this->blog_id) {
+            return true;
+        }
+        if (!isset($this->serving[$blog_id])) {
+            $settings = new ImgPro_CDN_Settings();
+            $this->serving[$blog_id] = ImgPro_CDN_Settings::plugin_active_here() && $settings->is_serving();
+        }
+        return $this->serving[$blog_id];
     }
 
     /**
@@ -190,588 +328,843 @@ class ImgPro_CDN_Rewriter {
     }
 
     /**
-     * Initialize hooks
-     *
-     * ARCHITECTURE: Always register hooks, but check context when they execute.
-     * This is necessary because WordPress hasn't parsed the request yet at
-     * plugins_loaded time, so we can't reliably determine request type here.
+     * Register rewriting hooks when serving from img.pro is on
      *
      * @since 0.1.0
-     * @since 1.1 Removed video/audio filters - Image CDN only
      * @return void
      */
     public function init() {
-        // Check if CDN is active (current mode is valid AND enabled)
-        if (!ImgPro_CDN_Settings::is_cdn_active($this->settings->get_all())) {
+        if (!$this->settings->is_serving()) {
             return;
         }
 
-        // ALWAYS register hooks - we'll check context when they execute
-        // This is the only reliable way to handle the WordPress request lifecycle
-
-        // Core image hooks
-        add_filter('wp_get_attachment_url', [$this, 'rewrite_url'], 10, 2);
-        add_filter('wp_get_attachment_image_src', [$this, 'rewrite_image_src'], 10, 4);
-        add_filter('wp_calculate_image_srcset', [$this, 'rewrite_srcset'], 10, 5);
-        // Run late (priority 999) to override any lazy loading plugins that modify src
+        // Images are swapped where markup is produced, not in
+        // wp_get_attachment_url() or wp_get_attachment_image_src():
+        // WordPress builds size URLs and srcset from those by matching
+        // upload paths, which an img.pro URL does not contain.
+        // Run late (priority 999) to see the final src from lazy loading plugins
         add_filter('wp_get_attachment_image_attributes', [$this, 'rewrite_attributes'], 999, 3);
+        add_filter('post_thumbnail_url', [$this, 'rewrite_url'], 10, 1);
 
-        // Content filters (processes img tags only - Image CDN)
+        // Rendered HTML
         add_filter('the_content', [$this, 'rewrite_content'], 999);
         add_filter('post_thumbnail_html', [$this, 'rewrite_content'], 999);
         add_filter('widget_text', [$this, 'rewrite_content'], 999);
+        add_filter('widget_block_content', [$this, 'rewrite_content'], 999);
     }
 
     /**
-     * Rewrite URL
+     * Rewrite a single image URL
      *
-     * @since 0.1.0
-     * @param string   $url           Image URL.
-     * @param int|null $attachment_id Attachment ID.
-     * @return string
+     * @since 2.0.0
+     * @param string|false $url Image URL.
+     * @return string|false
      */
-    public function rewrite_url($url, $attachment_id = null) {
-        // Check context NOW (lazy evaluation)
-        // By the time this hook executes, WordPress has parsed the request
-        // and all constants (REST_REQUEST, DOING_AJAX, etc.) are defined
-        if ($this->is_unsafe_context()) {
+    public function rewrite_url($url) {
+        if ($this->is_unsafe_context() || $this->processing || !is_string($url) || '' === $url || !$this->is_serving_here()) {
             return $url;
         }
 
-        // $processing prevents infinite recursion in rewrite_content()
-        if ($this->processing || !$this->should_rewrite($url)) {
-            return $url;
-        }
-
-        return $this->build_cdn_url($url);
+        $map = $this->lookup([$url]);
+        return isset($map[$url]) ? $map[$url] : $url;
     }
 
     /**
-     * Rewrite image src array
-     *
-     * @since 0.1.0
-     * @param array|false $image         Image data array or false.
-     * @param int         $attachment_id Attachment ID.
-     * @param string      $size          Image size.
-     * @param bool        $icon          Whether to use icon.
-     * @return array|false
-     */
-    public function rewrite_image_src($image, $attachment_id, $size, $icon) {
-        // Check context (lazy evaluation)
-        if ($this->is_unsafe_context()) {
-            return $image;
-        }
-
-        if (!is_array($image) || $this->processing) {
-            return $image;
-        }
-
-        if (!empty($image[0]) && $this->should_rewrite($image[0])) {
-            $image[0] = $this->build_cdn_url($image[0]);
-        }
-
-        return $image;
-    }
-
-    /**
-     * Rewrite srcset
-     *
-     * @since 0.1.0
-     * @param array  $sources       Srcset sources array.
-     * @param array  $size_array    Size array.
-     * @param string $image_src     Image source URL.
-     * @param array  $image_meta    Image metadata.
-     * @param int    $attachment_id Attachment ID.
-     * @return array
-     */
-    public function rewrite_srcset($sources, $size_array, $image_src, $image_meta, $attachment_id) {
-        // Check context (lazy evaluation)
-        if ($this->is_unsafe_context()) {
-            return $sources;
-        }
-
-        if (!is_array($sources) || $this->processing) {
-            return $sources;
-        }
-
-        foreach ($sources as &$source) {
-            if (!empty($source['url']) && $this->should_rewrite($source['url'])) {
-                $source['url'] = $this->build_cdn_url($source['url']);
-            }
-        }
-
-        return $sources;
-    }
-
-    /**
-     * Get true origin URL from any URL type (origin/CDN)
-     *
-     * SINGLE SOURCE OF TRUTH for origin extraction.
-     *
-     * @since 0.1.0
-     * @param string $url Input URL (origin or CDN).
-     * @return string Origin URL.
-     */
-    private function get_true_origin($url) {
-        if (empty($url)) {
-            return $url;
-        }
-
-        // If already origin URL, return as-is
-        if (!$this->is_cdn_url($url)) {
-            return $url;
-        }
-
-        // Extract origin from CDN URL
-        // Format: https://cdn-domain/origin-domain/path
-        // Result: https://origin-domain/path
-        $parsed = wp_parse_url($url);
-
-        // Handle wp_parse_url() failure
-        if ($parsed === false || !is_array($parsed) || empty($parsed['path'])) {
-            return $url;
-        }
-
-        $path = trim($parsed['path'], '/');
-        $path_parts = explode('/', $path, 2);
-
-        if (count($path_parts) !== 2) {
-            // Malformed CDN URL - return as-is
-            return $url;
-        }
-
-        // Reconstruct origin URL preserving query string and fragment
-        $origin_url = 'https://' . $path_parts[0] . '/' . $path_parts[1];
-
-        // Preserve query string if present
-        if (!empty($parsed['query'])) {
-            $origin_url .= '?' . $parsed['query'];
-        }
-
-        // Preserve fragment if present
-        if (!empty($parsed['fragment'])) {
-            $origin_url .= '#' . $parsed['fragment'];
-        }
-
-        return $origin_url;
-    }
-
-    /**
-     * Build onload handler
-     *
-     * Adds the imgpro-loaded class when image loads successfully.
-     * This works with CSS to prevent broken image flash.
-     *
-     * @since 0.1.5
-     * @return string JavaScript onload handler.
-     */
-    private function get_onload_handler() {
-        return "this.classList.add('imgpro-loaded')";
-    }
-
-    /**
-     * Build onerror fallback handler
-     *
-     * Creates inline JavaScript that falls back to origin URL on CDN failure.
-     * The origin URL is extracted directly from the CDN URL path.
-     *
-     * Single-domain architecture: CDN URL contains origin domain in path.
-     * Example: https://px.img.pro/example.com/path/image.jpg
-     *          → Falls back to https://example.com/path/image.jpg
-     *
-     * Note: Uses string manipulation instead of URL constructor for
-     * maximum compatibility in inline handler context.
-     *
-     * @since 0.1.5
-     * @return string JavaScript onerror handler.
-     */
-    private function get_onerror_handler() {
-        // Fallback logic using string manipulation (no URL constructor):
-        // 1. Check if not already in fallback state
-        // 2. Mark as fallback='1' (trying origin)
-        // 3. Use currentSrc (the actual URL that failed, could be from srcset)
-        // 4. Split URL: ['https:', '', 'cdn-domain', 'origin-domain', 'path', ...]
-        // 5. Extract parts after CDN domain (index 3+)
-        // 6. Set new onerror to handle origin failure (sets fallback='2')
-        // 7. Remove srcset to prevent browser choosing other CDN URLs
-        // 8. Reconstruct and set origin URL
-        //
-        // Example: https://px.img.pro/example.com/wp-content/image.jpg
-        //   currentSrc.split('/') = ['https:', '', 'px.img.pro', 'example.com', 'wp-content', 'image.jpg']
-        //   p = slice(3) = ['example.com', 'wp-content', 'image.jpg']
-        //   result = 'https://' + p[0] + '/' + p.slice(1).join('/') = 'https://example.com/wp-content/image.jpg'
-        //
-        // Note: currentSrc gives the actual URL the browser tried to load,
-        // which may be from srcset rather than src attribute.
-        $handler = "if (!this.dataset.fallback) { "
-                 . "this.dataset.fallback = '1'; "
-                 . "var u = this.currentSrc || this.src; "
-                 . "var p = u.split('/').slice(3); "
-                 . "this.onerror = function() { this.dataset.fallback = '2'; this.onerror = null; }; "
-                 . "this.removeAttribute('srcset'); "
-                 . "this.src = 'https://' + p[0] + '/' + p.slice(1).join('/'); "
-                 . "}";
-
-        return $handler;
-    }
-
-    /**
-     * Rewrite image attributes
-     *
-     * Processes images generated by wp_get_attachment_image()
-     *
-     * ARCHITECTURE:
-     * - ALWAYS processes every image (no early returns except validation)
-     * - ALWAYS sets src to CDN URL
-     * - Adds onerror handler for fallback to origin
-     * - Runs at priority 999 to override other plugins
+     * Rewrite attributes of images rendered by wp_get_attachment_image()
      *
      * @since 0.1.0
      * @param array        $attributes Image attributes.
-     * @param WP_Post      $attachment Attachment post object.
-     * @param string|array $size       Image size.
+     * @param WP_Post      $attachment Attachment post.
+     * @param string|int[] $size       Requested size.
      * @return array
      */
     public function rewrite_attributes($attributes, $attachment, $size) {
-        // Check context (lazy evaluation)
-        if ($this->is_unsafe_context()) {
+        if ($this->is_unsafe_context() || $this->processing || !$this->is_serving_here()) {
             return $attributes;
         }
 
-        if (empty($attributes['src'])) {
+        $values = [];
+        foreach (self::URL_ATTRIBUTES as $name => $is_srcset) {
+            if (!empty($attributes[$name]) && is_string($attributes[$name])) {
+                $values[$name] = $attributes[$name];
+            }
+        }
+        if (empty($values)) {
             return $attributes;
         }
 
-        // Get true origin URL (extracts if already CDN)
-        $origin_url = $this->get_true_origin($attributes['src']);
-
-        // Skip if not a valid image URL
-        if (!$this->should_rewrite($origin_url)) {
+        $map = $this->lookup($this->collect_urls($values));
+        $new_values = [];
+        foreach ($values as $name => $value) {
+            $new_value = $this->replace_value($value, self::URL_ATTRIBUTES[$name], $map);
+            if ($new_value !== $value) {
+                $new_values[$name] = $new_value;
+            }
+        }
+        if (empty($new_values)) {
             return $attributes;
         }
 
-        // Build CDN URL from origin
-        $cdn_url = $this->build_cdn_url($origin_url);
+        // Every swapped image carries its original URL; one without a
+        // usable original keeps its local URLs
+        $origin = $this->fallback_url($values);
+        if ('' === $origin) {
+            return $attributes;
+        }
 
-        // Set src to CDN
-        $attributes['src'] = $cdn_url;
-
-        // Add data attribute for identification
-        $attributes['data-imgpro-cdn'] = '1';
-
-        // Add onload handler (adds imgpro-loaded class for CSS visibility)
-        $attributes['onload'] = $this->get_onload_handler();
-
-        // Add onerror fallback handler
-        $attributes['onerror'] = $this->get_onerror_handler();
+        $attributes = array_merge($attributes, $new_values);
+        $attributes['data-imgpro-cdn']    = '1';
+        $attributes['data-imgpro-origin'] = $origin;
+        $attributes['onerror']            = $this->get_onerror_handler();
 
         return $attributes;
     }
 
     /**
-     * Rewrite content HTML
+     * Rewrite image URLs in rendered HTML
      *
-     * Processes image elements in HTML content that weren't processed by rewrite_attributes()
-     *
-     * ARCHITECTURE:
-     * - ONLY processes elements WITHOUT data-imgpro-cdn (not yet processed)
-     * - NEVER modifies elements already processed by rewrite_attributes()
-     * - Uses WP_HTML_Tag_Processor for safe, spec-compliant HTML parsing (requires WP 6.2+)
+     * Handles img and AMP images, including common lazy loading
+     * attributes, plus links that point straight at an image file
+     * (lightboxes).
      *
      * @since 0.1.0
-     * @since 1.1 Simplified to images only - video/audio not processed
-     * @param string $content HTML content.
+     * @param string $content HTML.
      * @return string
      */
     public function rewrite_content($content) {
-        // Check context (lazy evaluation)
-        if ($this->is_unsafe_context()) {
+        if ($this->is_unsafe_context() || $this->processing || empty($content) || !is_string($content) || !$this->is_serving_here()) {
             return $content;
         }
 
-        // $processing flag prevents infinite recursion when content filters call each other
-        if ($this->processing || empty($content)) {
-            return $content;
-        }
-
-        // Early bail-out: Skip processing if no image tags present
-        // This is a performance optimization for text-only content
-        $has_image_tags = false;
-        $tag_patterns = ['<img', '<amp-img', '<amp-anim'];
-
-        foreach ($tag_patterns as $pattern) {
-            if (false !== stripos($content, $pattern)) {
-                $has_image_tags = true;
-                break;
-            }
-        }
-
-        if (!$has_image_tags) {
+        // Skip the HTML parser when nothing points at the uploads folder,
+        // and there is no image another website could serve
+        if (false === strpos($content, $this->get_upload_path()) && !($this->copies_remote() && (false !== stripos($content, '<img') || false !== stripos($content, '<amp-')))) {
             return $content;
         }
 
         $this->processing = true;
 
-        // Use WordPress HTML Tag Processor (WP 6.2+) for safe HTML parsing
-        // This is more robust than regex and handles malformed HTML gracefully
-        $content = $this->rewrite_content_with_tag_processor($content);
-
-        $this->processing = false;
-
-        return $content;
-    }
-
-    /**
-     * Rewrite content using WP_HTML_Tag_Processor (modern approach)
-     *
-     * Processes image elements only (IMG, AMP-IMG, AMP-ANIM).
-     * Video/audio not processed - use Unlimited CDN plugin for media.
-     *
-     * @since 0.1.0
-     * @since 1.1 Simplified to images only
-     * @param string $content HTML content.
-     * @return string Modified content.
-     */
-    private function rewrite_content_with_tag_processor($content) {
+        // First pass: collect every candidate URL for one batched lookup
+        $urls    = [];
+        $aliases = [];
+        $links   = [];
+        $images  = [];
+        $pixels  = [];
         $processor = new WP_HTML_Tag_Processor($content);
-
-        // Image tags only - video/audio not processed
-        $image_tags = ['IMG', 'AMP-IMG', 'AMP-ANIM'];
-
         while ($processor->next_tag()) {
-            $tag = $processor->get_tag();
-
-            // Skip if not an image tag
-            if (!in_array($tag, $image_tags, true)) {
+            $values = $this->get_tag_values($processor);
+            // An image with nothing to fall back to is never swapped (see the
+            // second pass), so its files are not worth queueing
+            if (!isset($values['href']) && !empty($values) && !self::has_image_source($values)) {
                 continue;
             }
-
-            // Skip if already processed (has our data-imgpro-cdn attribute)
-            if ($processor->get_attribute('data-imgpro-cdn')) {
-                continue;
+            $found  = $this->collect_urls($values);
+            $urls   = array_merge($urls, $found);
+            foreach ($found as $url) {
+                if (isset($values['href'])) {
+                    $links[$url] = true;
+                } else {
+                    $images[$url] = true;
+                }
             }
 
-            // Get src attribute
-            $src = $processor->get_attribute('src');
+            // A tracking pixel (declared 1x1, or hidden at 0) has to keep
+            // reaching its own server: never copy it from another website
+            if (!isset($values['href']) && self::is_pixel($processor)) {
+                foreach ($found as $url) {
+                    $pixels[$url] = true;
+                }
+            }
 
-            // Process src if present and valid
-            if (!empty($src)) {
-                $origin_url = $this->get_true_origin($src);
-
-                if ($this->should_rewrite($origin_url)) {
-                    $cdn_url = $this->build_cdn_url($origin_url);
-                    $processor->set_attribute('src', esc_url($cdn_url));
-                    $processor->set_attribute('data-imgpro-cdn', '1');
-
-                    // Images: add onload for CSS class and onerror for fallback
-                    $processor->set_attribute('onload', $this->get_onload_handler());
-                    $processor->set_attribute('onerror', $this->get_onerror_handler());
+            // A src on another host that WordPress matched to one of this
+            // site's files (that file's sizes are the srcset it added)
+            if (isset($values['src'], $values['srcset']) && null === $this->url_to_path($values['src'])) {
+                $match = $this->match_srcset_candidate(trim($values['src']), $values['srcset']);
+                if (null !== $match) {
+                    $aliases[trim($values['src'])] = $match['path'];
                 }
             }
         }
+
+        // Only an address some image shows is an image for certain; one that
+        // is only a link's target must name an image file to be copied
+        $map = $this->lookup($urls, $aliases, array_diff_key($links, $images), $pixels);
+        if (empty($map)) {
+            $this->processing = false;
+            return $content;
+        }
+
+        // Second pass: swap URLs
+        $processor = new WP_HTML_Tag_Processor($content);
+        while ($processor->next_tag()) {
+            $tag    = $processor->get_tag();
+            $values = $this->get_tag_values($processor);
+
+            $new_values = [];
+            foreach ($values as $name => $value) {
+                $is_srcset = 'href' === $name ? false : self::URL_ATTRIBUTES[$name];
+                $new_value = $this->replace_value($value, $is_srcset, $map);
+                if ($new_value !== $value) {
+                    $new_values[$name] = $new_value;
+                }
+            }
+            if (empty($new_values)) {
+                continue;
+            }
+
+            // Fallback to the original file when img.pro cannot serve it
+            if ('A' !== $tag && !$processor->get_attribute('data-imgpro-origin')) {
+                $origin = $this->fallback_url($values, isset($values['src']) && isset($this->remote_hits[trim($values['src'])]));
+                if ('IMG' === $tag && '' === $origin) {
+                    // Every swapped image carries its original URL; one
+                    // without a usable original keeps its local URLs
+                    continue;
+                }
+                $processor->set_attribute('data-imgpro-cdn', '1');
+                if ('' !== $origin) {
+                    $processor->set_attribute('data-imgpro-origin', $origin);
+                    if ('IMG' === $tag) {
+                        $processor->set_attribute('onerror', $this->get_onerror_handler());
+                    }
+                }
+            }
+
+            foreach ($new_values as $name => $new_value) {
+                $processor->set_attribute($name, $new_value);
+            }
+        }
+
+        $this->processing = false;
 
         return $processor->get_updated_html();
     }
 
     /**
-     * Check if URL is a CDN URL
+     * URL-bearing attributes of the current tag
      *
-     * @since 0.1.0
-     * @param string $url URL to check.
-     * @return bool
+     * @since 2.0.0
+     * @param WP_HTML_Tag_Processor $processor Processor positioned on a tag.
+     * @return array attribute => value
      */
-    private function is_cdn_url($url) {
-        if (empty($url) || !is_string($url)) {
-            return false;
-        }
-        $cdn_url = $this->settings->get('cdn_url');
-        return !empty($cdn_url) && strpos($url, $cdn_url) !== false;
-    }
+    private function get_tag_values($processor) {
+        $tag = $processor->get_tag();
 
-    /**
-     * Check if URL should be rewritten
-     *
-     * @since 0.1.0
-     * @since 1.1 Now supports images only (video/audio removed)
-     * @param string $url URL to check.
-     * @return bool
-     */
-    private function should_rewrite($url) {
-        if (empty($url) || !is_string($url)) {
-            return false;
+        if ('A' === $tag) {
+            $href = $processor->get_attribute('href');
+            return (is_string($href) && '' !== $href) ? ['href' => $href] : [];
         }
 
-        // Already CDN URL?
-        if ($this->is_cdn_url($url)) {
-            return false;
+        // <picture> sources are left alone: the img fallback cannot undo them
+        if (!in_array($tag, ['IMG', 'AMP-IMG', 'AMP-ANIM'], true)) {
+            return [];
         }
 
-        // Check source URLs (allowed domains) - stored locally in settings
-        $source_urls = $this->settings->get('source_urls', []);
-        if (!empty($source_urls)) {
-            $url_host = wp_parse_url($url, PHP_URL_HOST);
-            if (!$url_host || !$this->is_domain_allowed($url_host, $source_urls)) {
-                return false;
+        $values = [];
+        foreach (array_keys(self::URL_ATTRIBUTES) as $name) {
+            $value = $processor->get_attribute($name);
+            if (is_string($value) && '' !== $value) {
+                $values[$name] = $value;
             }
         }
 
-        // Must be a supported image file
-        if (!$this->is_image_url($url)) {
-            return false;
-        }
-
-        return true;
+        return $values;
     }
 
     /**
-     * Check if URL is a supported image file
+     * Collect URLs from attribute values
      *
-     * Supports common image formats only. For video/audio, use Unlimited CDN plugin.
-     *
-     * @since 0.2.0
-     * @since 1.1 Renamed from is_media_url, removed video/audio
-     * @param string $url URL to check.
-     * @return bool True if URL points to a supported image file.
+     * @since 2.0.0
+     * @param array $values attribute => value.
+     * @return string[]
      */
-    private function is_image_url($url) {
-        /**
-         * Filter the list of allowed image extensions
-         *
-         * @since 1.1
-         * @param array $extensions List of file extensions (without dots)
-         */
-        $extensions = apply_filters('imgpro_image_extensions', [
-            // Images only
-            'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg',
-            'bmp', 'tiff', 'ico', 'heic', 'heif',
-        ]);
-
-        $path = wp_parse_url($url, PHP_URL_PATH);
-
-        if (!$path) {
-            return false;
+    private function collect_urls($values) {
+        $urls = [];
+        foreach ($values as $name => $value) {
+            $is_srcset = isset(self::URL_ATTRIBUTES[$name]) ? self::URL_ATTRIBUTES[$name] : false;
+            if ($is_srcset) {
+                foreach ($this->parse_srcset($value) as $candidate) {
+                    $urls[] = $candidate[0];
+                }
+            } else {
+                $urls[] = trim($value);
+            }
         }
-
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        return in_array($ext, $extensions, true);
+        return $urls;
     }
 
     /**
-     * Check if domain matches allowed domains (with subdomain support)
+     * Swap URLs inside an attribute value
      *
-     * @since 0.1.0
-     * @param string $host            Host to check.
-     * @param array  $allowed_domains Allowed domains list.
-     * @return bool
+     * @since 2.0.0
+     * @param string $value     Attribute value.
+     * @param bool   $is_srcset Whether the value is a srcset list.
+     * @param array  $map       original URL => img.pro URL.
+     * @return string
      */
-    private function is_domain_allowed($host, $allowed_domains) {
-        if (empty($host) || empty($allowed_domains)) {
-            return false;
+    private function replace_value($value, $is_srcset, $map) {
+        if (!$is_srcset) {
+            $url = trim($value);
+            return isset($map[$url]) ? $map[$url] : $value;
         }
 
-        $host = strtolower($host);
+        $changed = false;
+        $parts = [];
+        foreach ($this->parse_srcset($value) as $candidate) {
+            if (isset($map[$candidate[0]])) {
+                $candidate[0] = $map[$candidate[0]];
+                $changed = true;
+            }
+            $parts[] = trim($candidate[0] . ' ' . $candidate[1]);
+        }
 
-        foreach ($allowed_domains as $domain) {
-            $domain = strtolower(trim($domain));
+        return $changed ? implode(', ', $parts) : $value;
+    }
 
-            if (empty($domain)) {
+    /**
+     * Split a srcset value into [url, descriptor] pairs
+     *
+     * @since 2.0.0
+     * @param string $srcset Attribute value.
+     * @return array
+     */
+    private function parse_srcset($srcset) {
+        $candidates = [];
+        foreach (preg_split('/,\s+/', trim($srcset)) as $candidate) {
+            $candidate = trim($candidate, " \t\n\r\0\x0B,");
+            if ('' === $candidate) {
                 continue;
             }
+            $pieces = preg_split('/\s+/', $candidate, 2);
+            $candidates[] = [$pieces[0], $pieces[1] ?? ''];
+        }
+        return $candidates;
+    }
 
-            // Exact match
-            if ($host === $domain) {
-                return true;
+    /**
+     * Map original URLs to img.pro URLs for files that finished syncing
+     *
+     * @since 2.0.0
+     * @param string[] $urls    URLs as they appear in the page.
+     * @param array    $aliases URLs on other hosts known to be one of this
+     *                          site's files: URL => path in the uploads folder.
+     * @param bool[]   $links   URLs that are only links' targets: URL => true.
+     * @param bool[]   $skip    URLs never to copy from another website: URL => true.
+     * @return array original URL => img.pro URL
+     */
+    private function lookup($urls, $aliases = [], $links = [], $skip = []) {
+        $paths   = [];
+        $sources = [];
+        foreach (array_unique($urls) as $url) {
+            $path = $aliases[$url] ?? $this->url_to_path($url);
+            if (null !== $path) {
+                $paths[$url] = $path;
+                continue;
             }
-
-            // Subdomain match: www.example.com matches example.com
-            if (substr($host, -strlen('.' . $domain)) === '.' . $domain) {
-                return true;
+            $source = isset($skip[$url]) ? null : $this->remote_source($url, isset($links[$url]));
+            if (null !== $source) {
+                $sources[$url] = $source;
             }
         }
 
+        $map = [];
+        if (!empty($paths)) {
+            $found = ImgPro_CDN_Files::get_urls(array_values($paths));
+            foreach ($paths as $url => $path) {
+                if (isset($found[$path])) {
+                    $map[$url] = $found[$path];
+                }
+            }
+        }
+        $this->remote_hits = [];
+        if (!empty($sources)) {
+            $found = ImgPro_CDN_Files::get_remote_urls(array_values($sources), $this->may_queue_remote());
+            foreach ($sources as $url => $source) {
+                if (isset($found[$source])) {
+                    $map[$url] = $found[$source];
+                    $this->remote_hits[$url] = true;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Address img.pro can import an image on another website from
+     *
+     * Takes absolute and protocol-relative URLs on a host that is not this
+     * site's, with a public name img.pro can reach. Addresses naming a file
+     * img.pro does not accept are left alone, and so are links that do not
+     * name an image file: a link may lead anywhere, while an img always
+     * shows an image.
+     *
+     * @since 2.0.0
+     * @param string $url  URL as it appears in the page.
+     * @param bool   $link Whether it is a link's href rather than an image's.
+     * @return string|null Absolute URL without its fragment, or null.
+     */
+    private function remote_source($url, $link = false) {
+        if (!$this->copies_remote()) {
+            return null;
+        }
+
+        $url = trim((string) $url);
+        if ('//' === substr($url, 0, 2)) {
+            $url = 'https:' . $url;
+        }
+        $url = preg_replace('/#.*$/', '', $url);
+        // Whitespace, quotes, angle brackets and backslashes never belong
+        // in an address img.pro could fetch
+        if (!preg_match('#^https?://#i', $url) || strlen($url) > 1000 || preg_match('/[\s<>"\x5C]/', $url)) {
+            return null;
+        }
+
+        $parts = wp_parse_url($url);
+        $host  = isset($parts['host']) ? strtolower(rtrim($parts['host'], '.')) : '';
+        if ('' === $host || isset($parts['user']) || isset($parts['pass']) || isset($this->get_own_hosts()[$host])) {
+            return null;
+        }
+        // Copies already on img.pro
+        if ('img.pro' === $host || '.img.pro' === substr($host, -8)) {
+            return null;
+        }
+        if (!self::is_public_host($host) || self::is_tracking_host($host)) {
+            return null;
+        }
+        if (isset($parts['query']) && self::is_volatile_query($parts['query'])) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo((string) ($parts['path'] ?? ''), PATHINFO_EXTENSION));
+        if (in_array($extension, self::UNSUPPORTED_EXTENSIONS, true)) {
+            return null;
+        }
+        if ($link && !in_array($extension, ImgPro_CDN_API::UPLOADABLE_EXTENSIONS, true)) {
+            return null;
+        }
+        // Pages named after an image: wiki file pages (File:Example.jpg) and
+        // file-sharing previews show the image inside a web page
+        if ($link && (false !== strpos(wp_basename((string) ($parts['path'] ?? '')), ':') || 'dropbox.com' === $host || '.dropbox.com' === substr($host, -12))) {
+            return null;
+        }
+
+        /**
+         * Filter whether an image from another website is copied to img.pro
+         *
+         * @since 2.0.0
+         * @param bool   $copy Whether to copy it.
+         * @param string $url  The image's address.
+         */
+        return apply_filters('imgpro_cdn_copy_remote_image', true, $url) ? $url : null;
+    }
+
+    /**
+     * Whether a host name is one img.pro can reach on the public internet
+     *
+     * img.pro refuses private addresses itself; leaving them out here
+     * saves the import that would fail.
+     *
+     * @since 2.0.0
+     * @param string $host Lowercase host name.
+     * @return bool
+     */
+    private static function is_public_host($host) {
+        $host = trim($host, '[]');
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return (bool) filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        }
+        if (false === strpos($host, '.')) {
+            return false;
+        }
+        $tld = substr($host, strrpos($host, '.') + 1);
+        return !in_array($tld, self::PRIVATE_TLDS, true);
+    }
+
+    /**
+     * Whether a host serves tracking pixels or ads
+     *
+     * @since 2.0.0
+     * @param string $host Lowercase host name.
+     * @return bool
+     */
+    private static function is_tracking_host($host) {
+        foreach (self::TRACKING_HOSTS as $tracker) {
+            if ($host === $tracker || '.' . $tracker === substr($host, -strlen($tracker) - 1)) {
+                return true;
+            }
+        }
         return false;
     }
 
     /**
-     * Build CDN URL
+     * Whether a query string makes an address change between views
      *
-     * @since 0.1.0
-     * @param string $url Original image URL.
-     * @return string CDN URL or original URL if conversion fails.
+     * Signed or expiring links and cache-busters give the same picture a
+     * new address on each view, and each address would become a new copy
+     * in the App. The picture they show may also expire on purpose.
+     *
+     * @since 2.0.0
+     * @param string $query Query string.
+     * @return bool
      */
-    private function build_cdn_url($url) {
-        // Normalize first to ensure consistent cache keys
-        $normalized = $this->normalize_url($url);
-        $cache_key = 'cdn_' . md5($normalized);
-
-        if (isset($this->url_cache[$cache_key])) {
-            return $this->url_cache[$cache_key];
+    private static function is_volatile_query($query) {
+        foreach (explode('&', $query) as $pair) {
+            $name  = strtolower(rawurldecode((string) strstr($pair . '=', '=', true)));
+            $value = rawurldecode((string) substr((string) strstr($pair, '='), 1));
+            if (in_array($name, self::VOLATILE_PARAMS, true)) {
+                return true;
+            }
+            // A Unix time in seconds or milliseconds, as a value or as the
+            // whole parameter (image.jpg?1791358318)
+            if (preg_match('/^\d{10}(\d{3})?(\.\d+)?$/', '' !== $value ? $value : $name)) {
+                return true;
+            }
+            foreach (self::VOLATILE_PARAM_PREFIXES as $prefix) {
+                if (0 === strpos($name, $prefix)) {
+                    return true;
+                }
+            }
         }
-
-        $parsed = wp_parse_url($normalized);
-
-        // wp_parse_url() can return false on severely malformed URLs
-        // Cache the normalized URL to maintain consistency (cache key is based on normalized)
-        if ($parsed === false || !is_array($parsed) || empty($parsed['host']) || empty($parsed['path'])) {
-            $this->url_cache[$cache_key] = $normalized;
-            return $normalized;
-        }
-
-        $cdn_domain = $this->settings->get('cdn_url');
-
-        // Guard against empty domain - cache and return normalized URL
-        if (empty($cdn_domain)) {
-            $this->url_cache[$cache_key] = $normalized;
-            return $normalized;
-        }
-
-        // Build CDN URL preserving query string and fragment
-        $cdn_url = sprintf('https://%s/%s%s', $cdn_domain, $parsed['host'], $parsed['path']);
-
-        // Append query string if present
-        if (!empty($parsed['query'])) {
-            $cdn_url .= '?' . $parsed['query'];
-        }
-
-        // Append fragment if present
-        if (!empty($parsed['fragment'])) {
-            $cdn_url .= '#' . $parsed['fragment'];
-        }
-
-        $this->url_cache[$cache_key] = $cdn_url;
-        return $cdn_url;
+        return false;
     }
 
     /**
-     * Normalize URL
+     * Whether an image's attributes name a picture other than a placeholder
      *
-     * Converts relative and protocol-relative URLs to absolute URLs.
-     *
-     * @since 0.1.0
-     * @param string $url URL to normalize.
-     * @return string Normalized absolute URL.
+     * @since 2.0.0
+     * @param array $values URL-bearing attribute values.
+     * @return bool
      */
-    private function normalize_url($url) {
-        if (preg_match('/^https?:\/\//i', $url)) {
-            return $url;
-        }
-
-        if (substr($url, 0, 2) === '//') {
-            return 'https:' . $url;
-        }
-
-        if (substr($url, 0, 1) === '/') {
-            $home = wp_parse_url(home_url());
-            // Handle wp_parse_url() failure gracefully
-            if ($home === false || !is_array($home)) {
-                return $url;
+    private static function has_image_source($values) {
+        foreach (['src', 'data-lazy-src', 'data-src'] as $name) {
+            if (isset($values[$name]) && '' !== trim($values[$name]) && 0 !== stripos(trim($values[$name]), 'data:')) {
+                return true;
             }
-            $scheme = $home['scheme'] ?? 'https';
-            $host = $home['host'] ?? 'localhost';
-            return $scheme . '://' . $host . $url;
         }
-
-        return rtrim(home_url(), '/') . '/' . ltrim($url, '/');
+        return false;
     }
 
+    /**
+     * Whether the tag is a tracking pixel: declared at most 1 pixel wide or
+     * high, or hidden (a hidden image still loads)
+     *
+     * @since 2.0.0
+     * @param WP_HTML_Tag_Processor $processor Processor positioned on a tag.
+     * @return bool
+     */
+    private static function is_pixel($processor) {
+        foreach (['width', 'height'] as $name) {
+            // Read as browsers do: the leading number, with or without px
+            $value = $processor->get_attribute($name);
+            if (is_string($value) && preg_match('/^\s*\+?(\d+(?:\.\d+)?)(?:e0)?\s*(px)?\s*$/i', $value, $match) && (float) $match[1] <= 1) {
+                return true;
+            }
+        }
+        if (null !== $processor->get_attribute('hidden')) {
+            return true;
+        }
+        $style = $processor->get_attribute('style');
+        if (is_string($style)) {
+            $style = strtolower(preg_replace('/\s+/', '', $style));
+            if (preg_match('/display:none|visibility:hidden|(?:^|;)(?:width|height):[01](?:\.0+)?(?:px)?(?:;|!|$)/', $style)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether this request may queue new images from other websites
+     *
+     * Copies spend the App's image allowance, which the site's admins
+     * manage. A preview, or a post that is not public yet, shows content no
+     * admin has approved (a contributor's draft), so it only uses copies
+     * that already exist.
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    private function may_queue_remote() {
+        if (is_preview()) {
+            return false;
+        }
+        // Published content of any post type, testimonials and slides included
+        $post = get_post();
+        return !$post || is_post_status_viewable(get_post_status($post));
+    }
+
+    /**
+     * Hosts that serve this site, which are never another website
+     *
+     * @since 2.0.0
+     * @return bool[] host => true
+     */
+    private function get_own_hosts() {
+        $blog_id = get_current_blog_id();
+        if (!isset($this->own_hosts[$blog_id])) {
+            $hosts = [];
+            foreach ([home_url(), site_url(), 'http:' . $this->get_upload_base()] as $url) {
+                $host = wp_parse_url($url, PHP_URL_HOST);
+                if (is_string($host) && '' !== $host) {
+                    // The same site with and without www
+                    $host = strtolower($host);
+                    $bare = preg_replace('/^www\./', '', $host);
+                    $hosts[$bare]          = true;
+                    $hosts['www.' . $bare] = true;
+                }
+            }
+            $this->own_hosts[$blog_id] = $hosts;
+        }
+        return $this->own_hosts[$blog_id];
+    }
+
+    /**
+     * Whether the site WordPress is rendering copies other websites' images
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    private function copies_remote() {
+        $blog_id = get_current_blog_id();
+        if (!isset($this->remote[$blog_id])) {
+            $settings = $blog_id === $this->blog_id ? $this->settings : new ImgPro_CDN_Settings();
+            $this->remote[$blog_id] = (bool) $settings->get('remote');
+        }
+        return $this->remote[$blog_id];
+    }
+
+    /**
+     * Path relative to the uploads folder for a URL, if it points there
+     *
+     * Accepts absolute, protocol-relative and root-relative URLs on the
+     * site's own host. Query strings and fragments are ignored.
+     *
+     * @since 2.0.0
+     * @param string $url URL.
+     * @return string|null
+     */
+    private function url_to_path($url) {
+        if (!is_string($url) || '' === $url) {
+            return null;
+        }
+
+        $url = preg_replace('/[?#].*$/', '', trim($url));
+        $base = $this->get_upload_base();
+
+        if ('/' === substr($url, 0, 1) && '//' !== substr($url, 0, 2)) {
+            $prefix = $this->get_upload_path();
+            $rest = (0 === strpos($url, $prefix)) ? substr($url, strlen($prefix)) : null;
+        } else {
+            $url = preg_replace('#^https?:#i', '', $url);
+            $rest = (0 === stripos($url, $base)) ? substr($url, strlen($base)) : null;
+
+            // The same uploads folder at another of the site's own hosts (www or not)
+            if (null === $rest && '//' === substr($url, 0, 2)) {
+                $host   = wp_parse_url('http:' . $url, PHP_URL_HOST);
+                $path   = wp_parse_url('http:' . $url, PHP_URL_PATH);
+                $prefix = $this->get_upload_path();
+                if (is_string($host) && isset($this->get_own_hosts()[strtolower(rtrim($host, '.'))]) && is_string($path) && 0 === strpos($path, $prefix)) {
+                    $rest = substr($path, strlen($prefix));
+                }
+            }
+        }
+
+        if (null === $rest || '' === $rest || false !== strpos($rest, '..')) {
+            return null;
+        }
+
+        // Normalized like the file map's paths (backslashes, duplicate slashes)
+        return ltrim(wp_normalize_path(rawurldecode($rest)), '/');
+    }
+
+    /**
+     * Original URL an image falls back to when img.pro cannot serve it
+     *
+     * The fallback is the original of the image the browser shows. When
+     * src points into the media library, that is src: a data-src beside it
+     * is not necessarily for lazy loading (WooCommerce keeps the zoom image
+     * there). Otherwise src is a lazy loader's placeholder, and the image is
+     * the one it copies in from data-lazy-src or data-src.
+     *
+     * Without any lazy attributes, src is the image even when it is stale:
+     * content from before a move (another host, a subfolder, a network
+     * subsite) keeps its old address in src, while WordPress builds srcset
+     * from the current uploads folder and the browser uses that. The old
+     * address may no longer answer, so the fallback is the same file at
+     * its current address.
+     *
+     * A copy of an image from another website falls back to that image's
+     * own address.
+     *
+     * @since 2.0.0
+     * @param array $values     Attribute values before swapping.
+     * @param bool  $remote_src Whether src is swapped for a copy of an image
+     *                          from another website.
+     * @return string Fallback URL, or empty when there is none to offer.
+     */
+    private function fallback_url($values, $remote_src = false) {
+        $src = isset($values['src']) ? trim($values['src']) : '';
+        $own = '' !== $src ? $this->url_to_path($src) : null;
+
+        $lazy_loaded = isset($values['data-src']) || isset($values['data-lazy-src'])
+            || isset($values['data-srcset']) || isset($values['data-lazy-srcset']);
+
+        // Beside lazy attributes, src is a placeholder; they decide below
+        if ($remote_src && '' !== $src && !$lazy_loaded) {
+            return $this->absolute_url($src);
+        }
+        $plain = '' !== $src && !$lazy_loaded && preg_match('#^(https?:)?//|^/#i', $src);
+
+        // A stale src that WordPress matched to a srcset candidate (it
+        // looks for the candidate's file at the end of src's path): the
+        // candidate is the file at its current address
+        if ($plain && isset($values['srcset'])) {
+            $match = $this->match_srcset_candidate($src, $values['srcset']);
+            if (null !== $match && $match['path'] !== $own) {
+                return $this->absolute_url($match['url']);
+            }
+        }
+
+        if (null !== $own) {
+            return $this->absolute_url($src);
+        }
+
+        foreach (['data-lazy-src', 'data-src'] as $name) {
+            $lazy = isset($values[$name]) ? trim($values[$name]) : '';
+            if ('' !== $lazy && 0 !== stripos($lazy, 'data:')) {
+                return $this->absolute_url($lazy);
+            }
+        }
+
+        if ($plain) {
+            // Same uploads path on another host: the same file on this one,
+            // when this site has it (every WordPress site uses this path)
+            $absolute = ('//' === substr($src, 0, 2)) ? 'http:' . $src : $src;
+            $path     = wp_parse_url($absolute, PHP_URL_PATH);
+            $prefix   = $this->get_upload_path();
+            $relative = is_string($path) && 0 === strpos($path, $prefix) ? ltrim(wp_normalize_path(rawurldecode(substr($path, strlen($prefix)))), '/') : '';
+            if ('' !== $relative && false === strpos($relative, '..') && file_exists(ImgPro_CDN_Files::get_basedir() . '/' . $relative)) {
+                $query = (string) wp_parse_url($absolute, PHP_URL_QUERY);
+                return $this->get_upload_base() . substr($path, strlen($prefix)) . ('' !== $query ? '?' . $query : '');
+            }
+
+            // Elsewhere, and its own file is not in srcset (a size another
+            // size of the same width replaced): any current candidate is
+            // a better fallback than an address that may be dead
+            if (isset($values['srcset'])) {
+                foreach ($this->parse_srcset($values['srcset']) as $candidate) {
+                    if (null !== $this->url_to_path($candidate[0])) {
+                        return $this->absolute_url($candidate[0]);
+                    }
+                }
+            }
+
+            return $this->absolute_url($src);
+        }
+
+        return '';
+    }
+
+    /**
+     * Srcset candidate whose uploads-relative path a src ends with
+     *
+     * Mirrors how WordPress matches src to the attachment's sizes. When
+     * several candidates match, the longest path wins.
+     *
+     * @since 2.0.0
+     * @param string $src    Image src.
+     * @param string $srcset Srcset value.
+     * @return array|null ['url' => candidate URL, 'path' => its uploads-relative path], or null.
+     */
+    private function match_srcset_candidate($src, $srcset) {
+        $absolute = ('//' === substr($src, 0, 2)) ? 'http:' . $src : $src;
+        $path     = wp_parse_url($absolute, PHP_URL_PATH);
+        if (!is_string($path)) {
+            return null;
+        }
+        $decoded = '/' . ltrim(wp_normalize_path(rawurldecode($path)), '/');
+
+        $best = null;
+        foreach ($this->parse_srcset($srcset) as $candidate) {
+            $relative = $this->url_to_path($candidate[0]);
+            if (null === $relative || '/' . $relative !== substr($decoded, -strlen('/' . $relative))) {
+                continue;
+            }
+            if (null === $best || strlen($relative) > strlen($best['path'])) {
+                $best = ['url' => $candidate[0], 'path' => $relative];
+            }
+        }
+        return $best;
+    }
+
+    /**
+     * Make a page URL absolute for use as the fallback
+     *
+     * @since 2.0.0
+     * @param string $url URL as it appears in the page.
+     * @return string
+     */
+    private function absolute_url($url) {
+        $url = trim($url);
+        if ('//' === substr($url, 0, 2)) {
+            // Protocol-relative: the browser keeps the page's scheme
+            return $url;
+        }
+        if ('/' === substr($url, 0, 1)) {
+            // Root-relative: prefix the site's host only, so a home URL in a
+            // subfolder (example.com/blog) doesn't add its path twice
+            $home = wp_parse_url(home_url());
+            if (empty($home['host'])) {
+                return $url;
+            }
+            return '//' . $home['host'] . (isset($home['port']) ? ':' . $home['port'] : '') . $url;
+        }
+        return $url;
+    }
+
+    /**
+     * Uploads base URL without scheme, with trailing slash
+     *
+     * @since 2.0.0
+     * @return string
+     */
+    private function get_upload_base() {
+        // Per site: a network page can render other sites' content
+        $blog_id = get_current_blog_id();
+        if (!isset($this->upload_bases[$blog_id])) {
+            $uploads = wp_get_upload_dir();
+            $this->upload_bases[$blog_id] = trailingslashit(preg_replace('#^https?:#i', '', $uploads['baseurl']));
+        }
+        return $this->upload_bases[$blog_id];
+    }
+
+    /**
+     * Path part of the uploads base URL, e.g. /wp-content/uploads/
+     *
+     * @since 2.0.0
+     * @return string
+     */
+    private function get_upload_path() {
+        $path = wp_parse_url('http:' . $this->get_upload_base(), PHP_URL_PATH);
+        return trailingslashit($path ? $path : '/');
+    }
+
+    /**
+     * Inline handler that swaps a failed img.pro image for the original
+     *
+     * Removing srcset stops the browser from picking another img.pro
+     * candidate; clearing the handler prevents loops if the original
+     * fails too. An empty src (a lazy loader has not filled it in yet)
+     * fires an error with no image requested; the handler ignores it and
+     * waits for a real failure, which may come from src or srcset. Safari
+     * before 26.4 reports the page URL as currentSrc for an empty src, so
+     * the guard also requires a src or srcset to be set.
+     *
+     * @since 0.1.0
+     * @return string
+     */
+    private function get_onerror_handler() {
+        return "if(!this.currentSrc||!((this.getAttribute('src')||'').trim()||this.getAttribute('srcset')))return;"
+            . "this.onerror=null;this.removeAttribute('srcset');this.src=this.getAttribute('data-imgpro-origin');";
+    }
 }

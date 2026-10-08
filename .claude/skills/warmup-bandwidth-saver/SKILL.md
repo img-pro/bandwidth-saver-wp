@@ -8,89 +8,82 @@ You are my senior engineer and pair programmer.
 
 Before making ANY changes, fully understand the current Bandwidth Saver system and explain it back to me. This is a warm-up / context phase.
 
-## Project Repositories
+## Project Pieces
 
-The system consists of multiple repositories. Use the session's working directories to locate them:
+Use the session's working directories to locate them:
 
-1. **WordPress Plugin** (`bandwidth-saver`) - Look for directory containing `imgpro-cdn.php`
-2. **CDN Worker** (`unlimited-cdn`) - Shared backend, TypeScript worker with R2 integration
-3. **Billing Worker** (`unlimited-cdn-billing`) - Shared backend, worker with Stripe/D1
-4. **Landing Pages** (`bandwidth-saver-landing`) - Astro site (if available in session)
+1. **WordPress Plugin** (`bandwidth-saver`) - Look for the directory containing `imgpro-cdn.php`
+2. **img.pro API** - External service the plugin talks to. Docs at https://img.pro/api (OpenAPI spec linked from there)
+3. **Landing Pages** (`bandwidth-saver-landing`) - Astro site (if available in session)
+
+Since 2.0 there is no Bandwidth Saver backend of its own. The old CDN worker (`unlimited-cdn`, px.img.pro) and billing worker (billing.bandwidth-saver.com) are no longer used by this plugin.
 
 ## High-Level Intent
 
-- The **WordPress plugin** rewrites frontend image URLs so they are served through a Cloudflare Worker + R2 cache instead of directly from the origin server, without touching DNS or moving images in WordPress.
-- The **CDN worker** fetches images from the configured origin(s), stores them in R2 on first request, and serves cached images with long-lived cache headers. It also handles origin validation and security.
-- The **billing worker** handles Stripe subscriptions, API key generation and validation, site registration and updates, multi-domain origin support, usage analytics, and admin domain blocking.
+- Each site owner creates their own img.pro App and pastes an API key with Read and Write permission.
+- The **plugin** copies media library files (full size and every intermediate size) from disk to that App on demand: the first time a page shows a file, or when someone uses Copy to img.pro in the Media Library. Uploads are labelled with the site, and a custom table maps each upload path to its status and img.pro URL.
+- On the frontend, the plugin swaps media library URLs for the img.pro URLs of synced files at render time, and queues files it has not copied yet. WordPress stays in charge of sizes and formats; img.pro serves a re-encoded copy of each file at the same dimensions (HEIC as JPEG, metadata removed; animated PNGs stay on the server).
+- Plans, limits and billing live in img.pro (counted by stored images).
 
 ## Your Warm-Up Job (NO CODE CHANGES YET)
 
 ### 1. Explore the Codebase
 
-Use your tools to inspect all relevant code under those paths.
-
 **WordPress Plugin:**
-- Find the main plugin file (`imgpro-cdn.php`) and the classes under `includes/`, `admin/`, and `assets/`
-- Identify how it hooks into WordPress to rewrite image URLs
-- Understand how it stores configuration
-- Find how it talks to the billing and CDN workers
+- `imgpro-cdn.php` and the classes under `includes/`, plus `admin/` and `uninstall.php`
+- `class-imgpro-cdn-api.php`: img.pro client (usage, write check, multipart upload, list, batch delete, error envelope)
+- `class-imgpro-cdn-files.php`: the `{prefix}imgpro_files` table and its statuses (idle, pending, synced, failed, skipped, delete), queue priority, and per-attachment summaries
+- `class-imgpro-cdn-sync.php`: the WP-Cron and AJAX driven worker (deletions, backfill scan, adopt after reconnect, uploads with Media Library copies first), its lock, pauses and backoff
+- `class-imgpro-cdn-rewriter.php`: which WordPress hooks are filtered, which are deliberately not, and the origin fallback
+- `class-imgpro-cdn-admin.php` and `class-imgpro-cdn-admin-ajax.php`: connect, the serving setting, copy status, disconnect and remove-all
+- `class-imgpro-cdn-media.php`: the Media Library column, row and bulk actions, attachment details and edit screen block, and the copy itself
 
-**CDN Worker:**
-- Identify the main entry file (e.g., `src/index.ts`) and supporting modules (cache, origin, validation, viewer, analytics, utils, etc.)
-- Understand how it parses the CDN URL, validates the origin domain, fetches from origin, stores objects in R2, and returns responses
-
-**Billing Worker:**
-- Identify the main entry handler and routing
-- Understand the modules that deal with Stripe (checkout, portal, webhooks), account management (sites, API keys), source URLs, usage analytics, and admin domain blocking
+**img.pro API:**
+- `POST /v1/images`, `GET /v1/images` with label filters, `DELETE /v1/images/batch`, `GET /v1/usage`
+- Error types and codes, idempotency rules, accepted formats and size limit
 
 > Ignore `vendor/`, `node_modules/`, and build artifacts unless absolutely necessary.
 
 ### 2. Build a Mental Model
 
-For each repo, identify:
-- Main entry points and request handlers
-- Core data models or types (sites, tiers, source URLs, usage records, etc.)
-- Important helpers or utility modules
-
 Map the high-level flows:
 
-**A pageview in WordPress that includes images:**
-- What the plugin does to the HTML and URLs
-- How the browser hits the CDN worker
-- How the CDN worker decides to fetch from origin vs serve from R2
+**Connecting a site:**
+- How the key is validated and stored, and how the scan and matching start
 
-**A managed subscription flow:**
-- How the plugin initiates billing calls
-- How the billing worker creates checkout/portal sessions
-- How API keys are issued, validated, and used by the plugin and/or workers
+**A new upload in WordPress:**
+- How metadata changes record files, when they are queued, and how the worker uploads them
 
-**Origin validation:**
-- How domain allow/block lists work across billing + CDN worker (if applicable)
+**A pageview with images:**
+- What the plugin does to the HTML and attributes
+- How files not copied yet get queued, and what happens when img.pro fails in the browser
+
+**Copy to img.pro in the Media Library:**
+- How a copy is queued with priority and partly uploaded within the request
+
+**Edit, delete, disconnect, remove all, uninstall:**
+- What happens to rows in the table and to images on img.pro
 
 ### 3. Summarize Your Understanding BEFORE Doing Anything Else
 
 When you're done exploring, provide:
 
 **Architecture Overview:**
-- 1-2 paragraphs per repo explaining its role and key components
+- 1-2 paragraphs on the plugin and how it uses img.pro
 
 **Key Entry Points:**
-- Plugin: main PHP file, important classes, primary WordPress hooks and filters, key admin/settings entry points
-- CDN worker: request handler(s), routing, R2 integration, origin validation logic, notable query parameters/endpoints like `/health`, `/stats`, debug viewer, etc.
-- Billing worker: main request handler, API routes, Stripe integration points (checkout, portal, webhooks), D1/KV usage if present
+- Main PHP file, important classes, WordPress hooks and filters, admin and AJAX entry points, cron hooks
 
 **End-to-End Flows (in plain language):**
-- WordPress request with images → CDN worker → origin/R2 → browser
-- Subscription lifecycle: registration, checkout, webhooks, account updates, API key usage
-
-**Configuration & Environment:**
-- Important environment variables and how they influence behavior
+- Connect → scan → upload → render
+- Edit and delete lifecycle
+- Pause and resume (quota, bad key, suspended App, rate limits)
 
 ### 4. Identify Risks, Inconsistencies, and Questions
 
-- List any areas that look fragile, confusing, or inconsistent across the three repos
+- List any areas that look fragile, confusing, or inconsistent
 - Note any TODOs/FIXMEs or obvious technical debt that might matter for future work
-- Ask any clarifying questions you have about requirements, intended behavior, or constraints that are not obvious from the code
+- Ask any clarifying questions about requirements, intended behavior, or constraints that are not obvious from the code
 
 ## VERY IMPORTANT
 
@@ -107,6 +100,5 @@ Once you have a solid mental model and have summarized it back to me, **stop and
 | Component | Tech Stack | Deploy Target |
 |-----------|------------|---------------|
 | WordPress Plugin | PHP | WordPress.org / Manual |
-| CDN Worker | TypeScript | Cloudflare Workers + R2 |
-| Billing Worker | TypeScript | Cloudflare Workers + D1 |
+| img.pro | External API + CDN | api.img.pro, src.img.pro |
 | Landing Pages | Astro | Cloudflare Pages |

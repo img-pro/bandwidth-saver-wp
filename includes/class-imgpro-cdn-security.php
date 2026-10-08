@@ -55,33 +55,20 @@ class ImgPro_CDN_Security {
      * @var array
      */
     private static $nonce_actions = [
-        'imgpro_cdn_toggle_enabled'       => 'toggle_enabled',
-        'imgpro_cdn_checkout'             => 'checkout',
-        'imgpro_cdn_manage_subscription'  => 'manage_subscription',
-        'imgpro_cdn_request_recovery'     => 'recovery',
-        'imgpro_cdn_verify_recovery'      => 'recovery',
-        'imgpro_cdn_add_custom_domain'    => 'custom_domain',
-        'imgpro_cdn_check_custom_domain'  => 'custom_domain',
-        'imgpro_cdn_remove_custom_domain' => 'custom_domain',
-        'imgpro_cdn_remove_cdn_domain'    => 'remove_cdn_domain',
-        'imgpro_cdn_free_register'        => 'free_register',
-        'imgpro_cdn_update_onboarding_step' => 'onboarding',
-        'imgpro_cdn_complete_onboarding'  => 'onboarding',
-        'imgpro_cdn_sync_stats'           => 'sync_stats',
-        'imgpro_cdn_health_check'         => 'health_check',
-        'imgpro_cdn_get_usage'            => 'analytics',
-        'imgpro_cdn_get_insights'         => 'analytics',
-        'imgpro_cdn_get_daily_usage'      => 'analytics',
-        'imgpro_cdn_get_usage_periods'    => 'analytics',
-        'imgpro_cdn_get_source_urls'      => 'source_urls',
-        'imgpro_cdn_add_source_url'       => 'source_urls',
-        'imgpro_cdn_remove_source_url'    => 'source_urls',
+        'imgpro_cdn_connect'         => 'connect',
+        'imgpro_cdn_disconnect'      => 'connect',
+        'imgpro_cdn_sync_status'     => 'sync',
+        'imgpro_cdn_sync_step'       => 'sync',
+        'imgpro_cdn_retry_failed'    => 'sync',
+        'imgpro_cdn_resume_sync'     => 'sync',
+        'imgpro_cdn_remove_all'      => 'remove_all',
+        'imgpro_cdn_copy_attachment' => 'copy',
     ];
 
     /**
      * Get nonce action string for an AJAX action
      *
-     * @param string $ajax_action The AJAX action name (e.g., 'imgpro_cdn_toggle_enabled').
+     * @param string $ajax_action The AJAX action name (e.g., 'imgpro_cdn_sync_step').
      * @return string Full nonce action string.
      */
     public static function get_nonce_action($ajax_action) {
@@ -196,6 +183,21 @@ class ImgPro_CDN_Security {
     }
 
     /**
+     * Capability the settings page is registered with
+     *
+     * Matches current_user_can(): the plugin's own capability when the user
+     * has it, so a role granted only that capability can open the page its
+     * notices link to, and manage_options otherwise (a site whose roles
+     * were never granted it, such as a network site the plugin has not
+     * caught up with yet).
+     *
+     * @return string
+     */
+    public static function menu_capability() {
+        return current_user_can(self::CAPABILITY) ? self::CAPABILITY : 'manage_options';
+    }
+
+    /**
      * Grant plugin capability to administrators
      *
      * Call this on plugin activation.
@@ -217,13 +219,7 @@ class ImgPro_CDN_Security {
      * @return void
      */
     public static function remove_capability_from_all() {
-        global $wp_roles;
-
-        if (!isset($wp_roles)) {
-            $wp_roles = new WP_Roles();
-        }
-
-        foreach ($wp_roles->roles as $role_name => $role_info) {
+        foreach (wp_roles()->roles as $role_name => $role_info) {
             $role = get_role($role_name);
             if ($role) {
                 $role->remove_cap(self::CAPABILITY);

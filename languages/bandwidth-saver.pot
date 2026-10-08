@@ -1,15 +1,915 @@
-# Copyright (C) 2025 ImgPro
-# This file is distributed under the same license as the Bandwidth Saver: Image CDN plugin.
+# Copyright (C) 2026 img.pro
+# This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Bandwidth Saver: Image CDN 1.1.2\n"
+"Project-Id-Version: Bandwidth Saver: Image CDN 2.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/bandwidth-saver\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-12-01T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-10-08T00:05:16+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: bandwidth-saver\n"
+
+#. Plugin Name of the plugin
+#: imgpro-cdn.php
+msgid "Bandwidth Saver: Image CDN"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: imgpro-cdn.php
+msgid "https://github.com/img-pro/bandwidth-saver-wp"
+msgstr ""
+
+#. Description of the plugin
+#: imgpro-cdn.php
+msgid "Serve the images on your pages from your own img.pro App. Each image is copied the first time a page shows it."
+msgstr ""
+
+#. Author of the plugin
+#: imgpro-cdn.php
+#: includes/class-imgpro-cdn-media.php:957
+msgid "img.pro"
+msgstr ""
+
+#. Author URI of the plugin
+#: imgpro-cdn.php
+msgid "https://img.pro"
+msgstr ""
+
+#: imgpro-cdn.php:28
+msgid "Bandwidth Saver requires WordPress 6.2 or higher. Please update WordPress to use this plugin."
+msgstr ""
+
+#: imgpro-cdn.php:40
+msgid "Bandwidth Saver requires PHP 7.4 or higher. Contact your hosting provider to upgrade."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:82
+msgid "Paste your img.pro API key."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:133
+msgid "Connected."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:149
+msgid "img.pro did not recognize this key. Check that you copied all of it and that it has not been revoked. A key also stops working when the person who created it is no longer the App's owner or an admin. Keys created on test.img.pro only work there."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:153
+msgid "This key cannot read the App's images. Create a key with Read and Write permission."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:154
+msgid "This key cannot upload images. Create a key with Read and Write permission."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:157
+msgid "This App is paused or unavailable on img.pro, and this key stops working while it is. Check the App's Overview on img.pro, or use a key with App storage only data access."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:160
+#: includes/class-imgpro-cdn-admin.php:425
+#: includes/class-imgpro-cdn-admin.php:433
+msgid "This App is unavailable right now. Write to support@img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:163
+msgid "This App's images are being deleted on img.pro, so it takes no new ones. Use a key from another App."
+msgstr ""
+
+#. translators: %s: connection error message
+#: includes/class-imgpro-cdn-admin-ajax.php:167
+#, php-format
+msgid "Could not reach img.pro: %s"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:170
+msgid "img.pro is busy right now. Try again in a minute."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin-ajax.php:201
+msgid "img.pro is not connected."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:113
+#: includes/class-imgpro-cdn-admin.php:114
+#: includes/class-imgpro-cdn-admin.php:535
+msgid "Bandwidth Saver"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:158
+msgid "Checking your key…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:159
+#: includes/class-imgpro-cdn-admin.php:589
+msgid "Connect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:160
+#: includes/class-imgpro-cdn-media.php:902
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:161
+#: includes/class-imgpro-cdn-media.php:903
+msgid "Your session has expired. Reload this page to continue."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:162
+msgid "Failed files queued for copying again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:164
+msgid "Stop deleting and disconnect? Images not deleted yet stay in your img.pro App."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:165
+msgid "Stop serving images from img.pro? Your images stay in your img.pro App."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:166
+msgid "Delete every image this site uploaded to img.pro, then disconnect? This cannot be undone."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:183
+msgid "Sorry, you are not allowed to manage these options."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:231
+msgid "Bandwidth Saver 2.0 now serves images from your own img.pro App."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:232
+msgid "Bandwidth Saver no longer uses the old managed CDN or a self-hosted Cloudflare Worker, so your images load from your own server until you connect an img.pro API key. If you use a page cache, clear it, since cached pages still point to the old CDN."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:233
+#: includes/class-imgpro-cdn-admin.php:559
+msgid "Connect img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:269
+msgid "Overview"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:271
+msgid "Bandwidth Saver serves the images on your pages from your own img.pro App, so they load from img.pro's global network instead of your server. Your original files stay on your server."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:272
+msgid "An image is copied to your App the first time a page shows it. Until its copy is ready, the page loads it from your server. Images no page shows are not copied unless you copy them from the Media Library, so until then they use none of your App's images."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:273
+msgid "Images your posts load from other websites, such as an earlier domain of this site or an image inserted from a URL, are copied the same way: img.pro fetches each one from its address the first time a page shows it. The Images from other websites setting on this screen turns this off."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:274
+msgid "WordPress stores each image as several files, its full size and each thumbnail size, and each file is one image in your App. Free stores up to 5,000 images, Pro up to 50,000, and Unlimited has no limits. Sites connected to the same App share it."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:280
+msgid "Troubleshooting"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:282
+msgid "<strong>An image still loads from your server.</strong> Its copy may be queued, or the page may come from a page cache saved before the copy existed. Bandwidth Saver changes images in post content, widgets, featured images and images output with wp_get_attachment_image(). Images whose URL a theme or plugin reads directly, such as images in theme CSS, in the page head (social sharing images) or added by scripts, keep their server address; copy them in the Media Library and use their img.pro URL."
+msgstr ""
+
+#. translators: %s: Label of the Retry failed files button.
+#: includes/class-imgpro-cdn-admin.php:284
+#, php-format
+msgid "<strong>Copy failed.</strong> Recent failures shows the reason for each file. Once the cause is fixed, click %s."
+msgstr ""
+
+#. translators: %s: Label of the Retry failed files button.
+#: includes/class-imgpro-cdn-admin.php:284
+#: includes/class-imgpro-cdn-admin.php:731
+msgid "Retry failed files"
+msgstr ""
+
+#. translators: %s: Label of the Try again now button.
+#: includes/class-imgpro-cdn-admin.php:286
+#, php-format
+msgid "<strong>img.pro is busy.</strong> Copying tries again on its own. Click %s to try at once."
+msgstr ""
+
+#. translators: %s: Label of the Try again now button.
+#: includes/class-imgpro-cdn-admin.php:286
+#: includes/class-imgpro-cdn-admin.php:389
+#: includes/class-imgpro-cdn-admin.php:432
+#: includes/class-imgpro-cdn-admin.php:768
+msgid "Try again now"
+msgstr ""
+
+#. translators: %s: Label of the Disconnect and keep images button.
+#: includes/class-imgpro-cdn-admin.php:288
+#, php-format
+msgid "<strong>A copy of this site.</strong> If this site is a staging copy of another site, click %s. While connected, deleting media here also deletes the other site's images from img.pro. Connecting again afterwards gives the copy its own label and its own copies."
+msgstr ""
+
+#. translators: %s: Label of the Disconnect and keep images button.
+#: includes/class-imgpro-cdn-admin.php:288
+#: includes/class-imgpro-cdn-admin.php:648
+#: includes/class-imgpro-cdn-admin.php:858
+msgid "Disconnect and keep images"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:292
+msgid "For more information:"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:293
+msgid "Your img.pro Apps"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:294
+msgid "Support forums"
+msgstr ""
+
+#. translators: 1: Images stored, 2: Plan limit.
+#: includes/class-imgpro-cdn-admin.php:364
+#, php-format
+msgid "%1$s of %2$s"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:369
+msgid "Not available"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:386
+msgid "Your App was at its plan's limit when Bandwidth Saver last copied an image, and it has room again."
+msgstr ""
+
+#. translators: %s: Label of the Try again now button.
+#: includes/class-imgpro-cdn-admin.php:389
+#, php-format
+msgid "Your App was at its plan's limit when Bandwidth Saver last copied an image, and it has room again. Click %s to copy again."
+msgstr ""
+
+#. translators: %s: The plan's image limit.
+#: includes/class-imgpro-cdn-admin.php:398
+#, php-format
+msgid "Your App is at the Free limit of %s images, so new images keep loading from their original address. The App's owner can upgrade it to Pro in Billing on img.pro."
+msgstr ""
+
+#. translators: %s: The plan's image limit.
+#: includes/class-imgpro-cdn-admin.php:402
+#, php-format
+msgid "Your App is at the Free limit of %s images. Images already on img.pro keep loading from it, and new ones keep loading from their original address. The App's owner can upgrade it to Pro in Billing on img.pro, or you can delete media you no longer use in WordPress, which deletes its copies too. Copying starts again on its own once the App has room."
+msgstr ""
+
+#. translators: %s: The plan's image limit.
+#: includes/class-imgpro-cdn-admin.php:406
+#, php-format
+msgid "Your App is at the Pro limit of %s images, so new images keep loading from their original address. The App's owner can upgrade it to Unlimited in Billing on img.pro."
+msgstr ""
+
+#. translators: %s: The plan's image limit.
+#: includes/class-imgpro-cdn-admin.php:410
+#, php-format
+msgid "Your App is at the Pro limit of %s images. Images already on img.pro keep loading from it, and new ones keep loading from their original address. The App's owner can upgrade it to Unlimited in Billing on img.pro, or you can delete media you no longer use in WordPress, which deletes its copies too. Copying starts again on its own once the App has room."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:413
+msgid "Your App is at its plan's limit of images, so new images keep loading from their original address. The App's owner can upgrade it in Billing on img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:414
+msgid "Your App is at its plan's limit of images. Images already on img.pro keep loading from it, and new ones keep loading from their original address. The App's owner can upgrade it in Billing on img.pro, or you can delete media you no longer use in WordPress, which deletes its copies too. Copying starts again on its own once the App has room."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:423
+msgid "img.pro did not accept Bandwidth Saver's API key, so no images are copied."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:424
+msgid "Your img.pro App is paused or unavailable, so no images are copied."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:426
+msgid "This App's images are being deleted on img.pro, so it takes no new ones."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:430
+msgid "img.pro did not accept your API key, or the key cannot upload. Paste a key with Read and Write permission below."
+msgstr ""
+
+#. translators: %s: Label of the Try again now button.
+#: includes/class-imgpro-cdn-admin.php:432
+#, php-format
+msgid "Your img.pro App is paused or unavailable, and this key stops working while it is. Check the App's Overview on img.pro, and once the App is active again, click %s. A key with App storage only data access keeps working while the App is paused."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:434
+msgid "This App's images are being deleted on img.pro, so it takes no new ones. Connect a key from another App below."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:467
+msgid "Scanning your Media Library…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:469
+msgid "Checking which files are already in your App…"
+msgstr ""
+
+#. translators: %s: Number of files.
+#: includes/class-imgpro-cdn-admin.php:472
+#, php-format
+msgid "Copying %s file to img.pro…"
+msgid_plural "Copying %s files to img.pro…"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-admin.php:475
+msgid "This site's database returned an error, so copying waits a little before trying again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:478
+msgid "img.pro is busy or did not answer, so copying waits a little before trying again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:479
+msgid "img.pro is busy or did not answer, so deleting waits a little before trying again."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:482
+msgid "Nothing is copied until the problem described above is solved."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:483
+msgid "Nothing is deleted until the problem described above is solved."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:485
+msgid "Deleting this site's images from img.pro…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:487
+msgid "Nothing is waiting to be copied."
+msgstr ""
+
+#. translators: %s: Number of files.
+#: includes/class-imgpro-cdn-admin.php:499
+#, php-format
+msgid "%s file"
+msgid_plural "%s files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-admin.php:527
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:557
+msgid "In the App, open API Keys and choose New key. Keep Read and Write ticked and, if it asks for Data access, keep App storage only. img.pro shows the key once, so copy it."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:559
+msgid "Replace your API key"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:563
+msgid "Bandwidth Saver serves the images on your pages from your own img.pro App. It copies each image to your App the first time a page shows it, and your original files stay on your server."
+msgstr ""
+
+#. translators: %s: Link to the img.pro dashboard.
+#: includes/class-imgpro-cdn-admin.php:569
+#, php-format
+msgid "Sign in at %s and create an App. The Free plan works."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:575
+msgid "Paste the key below."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:581
+msgid "API key"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:584
+msgid "WordPress stores each image as several files, its full size and each thumbnail size, and each file is one image in your App. Free stores up to 5,000 images, Pro up to 50,000, and Unlimited has no limits."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:627
+msgid "Deleting images from img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:641
+msgid "Disconnect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:643
+msgid "Disconnecting now stops deleting and forgets your API key. Images not deleted yet stay in your App."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:645
+msgid "Disconnecting stops serving images from img.pro and forgets your API key. Choose whether to keep this site's copies in your App or delete them."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:650
+msgid "Delete images from img.pro and disconnect"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:669
+#: includes/class-imgpro-cdn-admin.php:672
+msgid "Serve images"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:675
+msgid "Load images on your pages from img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:677
+msgid "When a page shows an image for the first time, Bandwidth Saver copies it to your App, and the page loads it from img.pro once the copy is ready. While this is off, every image loads from its original address and pages ask for no new copies. Copy to img.pro in the Media Library works either way."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:682
+#: includes/class-imgpro-cdn-admin.php:685
+msgid "Images from other websites"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:688
+msgid "Copy images that pages load from other websites"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:690
+msgid "Posts can show images from other addresses, such as an earlier domain of this site or an image inserted from a URL. img.pro copies such an image from its address the first time a page shows it, and each one counts as an image in your App. Copy only images you have the right to use."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:709
+#: includes/class-imgpro-cdn-media.php:787
+msgid "Copied"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:710
+msgid "From other websites"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:710
+msgid "Copies of images pages load from other websites, included in Copied."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:711
+#: includes/class-imgpro-cdn-media.php:782
+msgid "Queued"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:711
+msgid "Pages showed these files, or someone copied them from the Media Library. They keep loading from their original address until their copies are ready."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:713
+#: includes/class-imgpro-cdn-media.php:793
+msgid "Not copied yet"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:713
+msgid "Copied when a page shows them."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:714
+#: includes/class-imgpro-cdn-media.php:776
+msgid "Copy failed"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:715
+#: includes/class-imgpro-cdn-media.php:759
+msgid "Stays on your server"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:715
+msgid "img.pro does not accept these images: formats other than JPEG, PNG, GIF, WebP, AVIF and HEIC, files larger than 20 MB, and animated PNGs. Images missing from the uploads folder, and images img.pro blocked, are counted here too."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:716
+msgid "Being deleted from img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:716
+msgid "Copies of files deleted in WordPress."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:719
+msgid "Copying to img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:720
+msgid "Bandwidth Saver copies an image to your App the first time a page shows it. Images no page shows are not copied, and use none of your App's images, until you copy them."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:743
+msgid "Each size of an image is a separate file, and each file is one image in your App."
+msgstr ""
+
+#. translators: 1: Link to the Media Library, 2: Link to its list view.
+#: includes/class-imgpro-cdn-admin.php:748
+#, php-format
+msgid "To copy an image before a page shows it, open it in the %1$s and choose Copy to img.pro. To copy several, switch to %2$s, select them, and choose Copy to img.pro from Bulk actions."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:749
+msgid "Media Library"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:750
+msgid "list view"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:813
+msgid "Open Billing on img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:813
+#: includes/class-imgpro-cdn-admin.php:1016
+msgid "(opens in a new tab)"
+msgstr ""
+
+#. translators: %s: Error message returned by img.pro.
+#: includes/class-imgpro-cdn-admin.php:819
+#, php-format
+msgid "img.pro said: %s"
+msgstr ""
+
+#. translators: 1: Address the site connected from, 2: The site's current address.
+#: includes/class-imgpro-cdn-admin.php:849
+#, php-format
+msgid "This site connected to img.pro as %1$s, but its address is now %2$s."
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:852
+msgid "If you moved the site, there is nothing to do: its images on img.pro keep the old address as their label."
+msgstr ""
+
+#. translators: %s: Label of the Disconnect and keep images button.
+#: includes/class-imgpro-cdn-admin.php:857
+#, php-format
+msgid "If this is a copy of another site, such as a staging site, click %s below. While connected, deleting media here also deletes the original site's images from img.pro. Connecting again afterwards gives this copy its own label and its own copies."
+msgstr ""
+
+#. translators: %s: Number of images.
+#: includes/class-imgpro-cdn-admin.php:887
+#, php-format
+msgid "%s image this site no longer uses is still in the App it used before, because this site now uses another App. You can delete it in that App on img.pro."
+msgid_plural "%s images this site no longer uses are still in the App it used before, because this site now uses another App. You can delete them in that App on img.pro."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of images.
+#: includes/class-imgpro-cdn-admin.php:913
+#, php-format
+msgid "%s image could not be deleted from img.pro. You can delete it in your img.pro App."
+msgid_plural "%s images could not be deleted from img.pro. You can delete them in your img.pro App."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-admin.php:929
+msgid "Recent failures"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:939
+msgid "Files that stay on your server"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:977
+msgid "Free"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:978
+msgid "Pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:979
+msgid "Unlimited"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:984
+msgid "Your img.pro App"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:988
+msgid "Plan"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:990
+msgid "Paid plan"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:994
+msgid "Images stored"
+msgstr ""
+
+#: includes/class-imgpro-cdn-admin.php:997
+msgid "Every site connected to this App counts toward this total."
+msgstr ""
+
+#. translators: %s: Number of images.
+#: includes/class-imgpro-cdn-admin.php:1009
+#, php-format
+msgid "Your App has room for %s more image. When it reaches its limit, new images keep loading from their original address."
+msgid_plural "Your App has room for %s more images. When it reaches its limit, new images keep loading from their original address."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-admin.php:1016
+msgid "Manage your App on img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-api.php:116
+#: includes/class-imgpro-cdn-files.php:811
+msgid "The file could not be read from disk."
+msgstr ""
+
+#: includes/class-imgpro-cdn-api.php:266
+msgid "No img.pro API key is configured."
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/class-imgpro-cdn-api.php:309
+#: includes/class-imgpro-cdn-files.php:822
+#, php-format
+msgid "img.pro returned HTTP %d."
+msgstr ""
+
+#: includes/class-imgpro-cdn-core.php:188
+msgid "Settings"
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:797
+msgid "img.pro does not accept this file format."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:799
+msgid "The file is missing from the uploads folder."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:801
+msgid "The file is larger than the 20 MB img.pro accepts."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:803
+msgid "Animated PNGs stay on your server, because img.pro shows PNGs as still images."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:805
+msgid "The upload kept stopping before it finished. The file may be too large for this server's memory or time limits."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:807
+msgid "This server's PHP memory limit is too low to upload this file."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:809
+msgid "img.pro returned an unexpected response."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:813
+msgid "Copying this image from its website kept stopping before it finished."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:815
+msgid "img.pro blocked this image, so it loads from its original address."
+msgstr ""
+
+#: includes/class-imgpro-cdn-files.php:817
+msgid "img.pro could not process this image, so it loads from its original address."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:162
+msgctxt "column name"
+msgid "img.pro"
+msgstr ""
+
+#. translators: %s: Attachment title.
+#: includes/class-imgpro-cdn-media.php:223
+#: includes/class-imgpro-cdn-media.php:714
+#, php-format
+msgid "Copy &#8220;%s&#8221; to img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:224
+#: includes/class-imgpro-cdn-media.php:238
+#: includes/class-imgpro-cdn-media.php:715
+msgid "Copy to img.pro"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:260
+msgid "Sorry, you are not allowed to copy media to img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:265
+#: includes/class-imgpro-cdn-media.php:391
+msgid "Sorry, you are not allowed to copy this item to img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:306
+msgid "Nothing was copied, because img.pro is not connected."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:309
+msgid "Nothing was copied, because this site's images are being deleted from img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:420
+#: includes/class-imgpro-cdn-media.php:502
+msgid "Media file copied to img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:423
+#: includes/class-imgpro-cdn-media.php:504
+msgid "Media file queued for copying to img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:433
+#: includes/class-imgpro-cdn-media.php:506
+msgid "Media file could not be copied to img.pro."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:437
+#: includes/class-imgpro-cdn-media.php:768
+msgid "WordPress has no file recorded for this image in the uploads folder."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:439
+#: includes/class-imgpro-cdn-media.php:508
+msgid "Nothing to copy for this media file."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:450
+msgid "Nothing was copied."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:498
+msgid "The img.pro column shows why."
+msgstr ""
+
+#. translators: %s: Number of media files.
+#: includes/class-imgpro-cdn-media.php:513
+#, php-format
+msgid "%s media file copied to img.pro."
+msgid_plural "%s media files copied to img.pro."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of media files.
+#: includes/class-imgpro-cdn-media.php:517
+#, php-format
+msgid "%s media file queued for copying to img.pro."
+msgid_plural "%s media files queued for copying to img.pro."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of media files.
+#: includes/class-imgpro-cdn-media.php:521
+#, php-format
+msgid "%s media file could not be copied to img.pro."
+msgid_plural "%s media files could not be copied to img.pro."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of media files.
+#: includes/class-imgpro-cdn-media.php:525
+#, php-format
+msgid "%s media file had nothing to copy."
+msgid_plural "%s media files had nothing to copy."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of images.
+#: includes/class-imgpro-cdn-media.php:530
+#, php-format
+msgid "Its copy uses %s image in your App."
+msgid_plural "Its copies use %s images in your App."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Number of images.
+#: includes/class-imgpro-cdn-media.php:533
+#, php-format
+msgid "Their copy uses %s image in your App."
+msgid_plural "Their copies use %s images in your App."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-media.php:598
+msgid "Open Bandwidth Saver settings"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:696
+#: includes/class-imgpro-cdn-media.php:701
+msgid "img.pro:"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:724
+msgid "Copy img.pro URL"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:725
+msgid "Copied!"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:765
+msgid "Not an image"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:765
+msgid "Bandwidth Saver copies images only."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:768
+msgid "Files not found"
+msgstr ""
+
+#. translators: 1: Number of sizes copied to img.pro, 2: Number of sizes of the image.
+#: includes/class-imgpro-cdn-media.php:773
+#, php-format
+msgid "%1$s of %2$s size copied"
+msgid_plural "%1$s of %2$s sizes copied"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: Number of sizes copied to img.pro, 2: Number of sizes of the image.
+#: includes/class-imgpro-cdn-media.php:790
+#, php-format
+msgid "%1$s of %2$s size"
+msgid_plural "%1$s of %2$s sizes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-media.php:796
+msgid "Copied when a page shows it."
+msgstr ""
+
+#. translators: %s: Number of sizes.
+#: includes/class-imgpro-cdn-media.php:805
+#, php-format
+msgid "%s size stays on your server."
+msgid_plural "%s sizes stay on your server."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-imgpro-cdn-media.php:901
+msgid "Copying…"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:938
+msgid "Bandwidth Saver copies an image to your img.pro App the first time a page shows it, and from then on pages load it from img.pro. Images no page shows are not copied, and use none of your App's images, until you copy them."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:940
+msgid "Serve images is off on the Bandwidth Saver settings page, so pages load every image from its original address and ask for no new copies. Copy to img.pro still works."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:942
+msgid "The img.pro column in list view, and the img.pro line in an image's details, show where each image is:"
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:944
+msgid "<strong>Copied</strong> means your App has a copy of the image. While Serve images is on, pages load it from img.pro, and sizes not copied yet are copied when a page shows them."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:945
+msgid "<strong>Queued</strong> means the image is waiting to be copied. It loads from your server until then."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:946
+msgid "<strong>Not copied yet</strong> means your App has no copy of the image yet. While Serve images is on, it is copied the first time a page shows it."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:947
+msgid "<strong>Copy failed</strong> means img.pro did not take the image. The reason is shown under the status."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:948
+msgid "<strong>Stays on your server</strong> means img.pro does not accept the file (for example because of its format or size), the file WordPress recorded is missing from the uploads folder, or img.pro blocked it. The reason is shown under the status."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:949
+msgid "<strong>Not an image</strong> means a document, video, audio or other file. These always load from your server."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:950
+msgid "<strong>Files not found</strong> means WordPress has no file recorded for the image in the uploads folder, so Bandwidth Saver cannot copy it. The image loads from its original address."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:952
+msgid "<strong>Copy to img.pro</strong> copies every size of an image now instead of waiting for a page. Each size counts as one image in your App. To copy several images, select them in list view and choose Copy to img.pro from Bulk actions."
+msgstr ""
+
+#: includes/class-imgpro-cdn-media.php:953
+msgid "Bandwidth Saver changes images in post content, widgets, featured images and images output with wp_get_attachment_image(). For an image whose URL a theme or plugin reads directly, such as theme CSS or a social sharing image, copy it and use <strong>Copy img.pro URL</strong> in its details."
+msgstr ""
+
+#: includes/class-imgpro-cdn-security.php:113
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: includes/class-imgpro-cdn-security.php:167
+msgid "Too many requests. Please wait a moment and try again."
+msgstr ""
