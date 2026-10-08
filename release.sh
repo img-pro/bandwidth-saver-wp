@@ -69,7 +69,8 @@ fi
 
 # Copy files using rsync with exclusions
 echo -e "${YELLOW}→${NC} Copying plugin files..."
-eval rsync -av ${RSYNC_EXCLUDES} "${PLUGIN_DIR}/" "${BUILD_DIR}/" > /dev/null
+# --prune-empty-dirs drops folders left empty by the exclusions (assets/)
+eval rsync -av --prune-empty-dirs ${RSYNC_EXCLUDES} "${PLUGIN_DIR}/" "${BUILD_DIR}/" > /dev/null
 
 # Show what's included
 echo -e "${YELLOW}→${NC} Files included in build:"

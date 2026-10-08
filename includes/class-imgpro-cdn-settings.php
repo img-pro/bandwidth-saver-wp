@@ -52,12 +52,29 @@ class ImgPro_CDN_Settings {
     const PAUSE_AUTH = 'auth';
 
     /**
-     * Sync paused: the App is suspended or blocked by img.pro
+     * Sync paused: the App is paused, or blocked, and the key is App-wide
+     * (img.pro answers both with app_suspended)
      *
      * @since 2.0.0
      * @var string
      */
     const PAUSE_APP = 'app';
+
+    /**
+     * Sync paused: the App is blocked and refuses every write
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const PAUSE_BLOCKED = 'blocked';
+
+    /**
+     * Sync paused: the App's storage is being deleted
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const PAUSE_DELETING = 'deleting';
 
     /**
      * img.pro dashboard where users create Apps and API keys
@@ -68,6 +85,14 @@ class ImgPro_CDN_Settings {
     const DASHBOARD_URL = 'https://img.pro/apps';
 
     /**
+     * img.pro Billing, where the App's owner changes its plan
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const BILLING_URL = 'https://img.pro/billing';
+
+    /**
      * Default settings
      *
      * @since 0.1.0
@@ -76,6 +101,7 @@ class ImgPro_CDN_Settings {
     private $defaults = [
         'api_key'      => '',    // Encrypted img.pro API key
         'enabled'      => false, // Serve synced images from img.pro
+        'remote'       => true,  // Also copy images pages load from other websites
         'pause_reason' => '',    // Why sync is paused (see PAUSE_* constants)
         'pause_detail' => '',    // Message returned by img.pro when sync paused
         'removing'     => false, // Remove-all in progress
@@ -177,9 +203,13 @@ class ImgPro_CDN_Settings {
             $validated['enabled'] = (bool) $settings['enabled'];
         }
 
+        if (isset($settings['remote'])) {
+            $validated['remote'] = (bool) $settings['remote'];
+        }
+
         if (isset($settings['pause_reason'])) {
             $reason = sanitize_key($settings['pause_reason']);
-            if (in_array($reason, [self::PAUSE_NONE, self::PAUSE_QUOTA, self::PAUSE_AUTH, self::PAUSE_APP], true)) {
+            if (in_array($reason, [self::PAUSE_NONE, self::PAUSE_QUOTA, self::PAUSE_AUTH, self::PAUSE_APP, self::PAUSE_BLOCKED, self::PAUSE_DELETING], true)) {
                 $validated['pause_reason'] = $reason;
             }
         }
@@ -295,8 +325,12 @@ class ImgPro_CDN_Settings {
     /**
      * Reload settings from the database
      *
-     * Bypasses the options cache, which only reflects the value this
-     * request started with when no persistent object cache is used.
+     * Reads the row itself: the settings are autoloaded, so get_option()
+     * answers from this request's copy of the autoloaded options, which
+     * persistent object caches also keep for the request. A sync run, and
+     * update()'s read-merge-write, must see pauses, disconnects and removals
+     * other requests saved since. Reloading through core would mean
+     * dropping and reloading every autoloaded option on each call.
      *
      * @since 2.0.0
      * @return array Fresh settings.
@@ -318,6 +352,28 @@ class ImgPro_CDN_Settings {
 
         $this->settings = wp_parse_args($stored, $this->defaults);
         return $this->settings;
+    }
+
+    /**
+     * Whether the plugin is active on the site WordPress is working on
+     *
+     * Inside switch_to_blog() that site can be one where the plugin was
+     * deactivated, which keeps its settings and file map but no longer
+     * maintains them. Read from the options: is_plugin_active() is not
+     * loaded on the frontend.
+     *
+     * @since 2.0.0
+     * @return bool
+     */
+    public static function plugin_active_here() {
+        if (in_array(IMGPRO_CDN_PLUGIN_BASENAME, (array) get_option('active_plugins', []), true)) {
+            return true;
+        }
+        if (!is_multisite()) {
+            return false;
+        }
+        $network = (array) get_site_option('active_sitewide_plugins', []);
+        return isset($network[IMGPRO_CDN_PLUGIN_BASENAME]);
     }
 
     /**
@@ -365,14 +421,25 @@ class ImgPro_CDN_Settings {
     /**
      * Make a string safe to use as a label value
      *
-     * Label values may not contain commas and are capped at 128 characters.
+     * img.pro refuses a label value with a comma, with whitespace at either
+     * end, or longer than 128 characters as JavaScript counts them (UTF-16
+     * units, so a character outside the Basic Multilingual Plane counts
+     * twice). It is cut before it is trimmed, so a cut never leaves a space
+     * at the end, and never inside a multibyte character.
      *
      * @since 2.0.0
      * @param string $label Raw label.
      * @return string
      */
-    private static function clean_label($label) {
+    public static function clean_label($label) {
         $label = str_replace(',', '', sanitize_text_field((string) $label));
-        return substr(trim($label), 0, 128);
+
+        $label = mb_substr($label, 0, 128);
+        while ('' !== $label && mb_strlen($label) + preg_match_all('/[\x{10000}-\x{10FFFF}]/u', $label) > 128) {
+            $label = mb_substr($label, 0, -1);
+        }
+
+        // Trim as JavaScript does, which includes non-breaking spaces
+        return (string) preg_replace('/^[\s\x{00A0}\x{FEFF}]+|[\s\x{00A0}\x{FEFF}]+$/u', '', $label);
     }
 }

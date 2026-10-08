@@ -97,9 +97,12 @@ class ImgPro_CDN_API {
     /**
      * Upload a local file
      *
-     * The multipart boundary is derived from the idempotency key so a
-     * retry sends a byte-identical body, which img.pro requires to replay
-     * the original response instead of answering 409.
+     * img.pro recognizes a retry by its parsed fields and file, not the raw
+     * bytes, so any boundary works; deriving it from the idempotency key
+     * keeps retries byte-identical anyway. Changing the filename, the
+     * file's Content-Type or the labels or metadata JSON (wp_md5 included)
+     * makes a different request, which img.pro answers with 409
+     * idempotency_key_conflict (the sync requeues the file).
      *
      * @param string $path            Absolute path of the file.
      * @param array  $labels          Filterable labels (string => string).
@@ -149,6 +152,36 @@ class ImgPro_CDN_API {
     }
 
     /**
+     * Have img.pro import an image from its address
+     *
+     * img.pro fetches the URL itself (30 seconds at most, public addresses
+     * only), so the file never passes through this server. A source that
+     * does not answer, or answers with an error, comes back as
+     * fetch_failed.
+     *
+     * @param string $url             Absolute http(s) URL.
+     * @param array  $labels          Filterable labels (string => string).
+     * @param array  $metadata        Free-form metadata (string => string).
+     * @param string $idempotency_key Stable key for this import.
+     * @return array|WP_Error Image object.
+     */
+    public function import_url($url, $labels, $metadata, $idempotency_key) {
+        return $this->request('POST', '/images', [
+            'headers' => [
+                'Content-Type'    => 'application/json',
+                'Idempotency-Key' => $idempotency_key,
+            ],
+            'body'    => wp_json_encode([
+                'url'      => (string) $url,
+                'labels'   => (object) $labels,
+                'metadata' => (object) $metadata,
+            ]),
+            // img.pro's own fetch may take 30 seconds before it answers
+            'timeout' => 60,
+        ]);
+    }
+
+    /**
      * List images carrying the given labels
      *
      * @param array       $labels Label filters (key => value).
@@ -166,6 +199,37 @@ class ImgPro_CDN_API {
         }
 
         return $this->request('GET', '/images?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+    }
+
+    /**
+     * Images by id, up to 50
+     *
+     * Only images in the key's storage come back; img.pro leaves out ids it
+     * cannot serve (deleted, blocked, failed) without saying why.
+     *
+     * @param string[] $ids Image ids.
+     * @return array|WP_Error List object.
+     */
+    public function get_images($ids) {
+        $ids = array_values(array_slice(array_unique(array_filter(array_map('strval', (array) $ids))), 0, 50));
+        if (empty($ids)) {
+            return ['object' => 'list', 'data' => []];
+        }
+
+        return $this->request('GET', '/images?' . http_build_query(['ids' => implode(',', $ids)], '', '&', PHP_QUERY_RFC3986));
+    }
+
+    /**
+     * One image by id
+     *
+     * Says why an image cannot be served: 404 not_found when it is gone
+     * (or in another storage), 403 media_blocked, 422 media_failed.
+     *
+     * @param string $id Image id.
+     * @return array|WP_Error Image object.
+     */
+    public function get_image($id) {
+        return $this->request('GET', '/images/' . rawurlencode((string) $id));
     }
 
     /**
@@ -244,6 +308,13 @@ class ImgPro_CDN_API {
             /* translators: %d: HTTP status code */
             : sprintf(__('img.pro returned HTTP %d.', 'bandwidth-saver'), $status);
 
+        // A validation error's message is only "Validation failed"; the
+        // reason (a damaged file, an unsupported variant) is in details
+        $reasons = self::detail_messages($error_body['details'] ?? null);
+        if (!empty($reasons)) {
+            $message = implode(' ', $reasons);
+        }
+
         $error = new WP_Error($code, $message, [
             'status'      => $status,
             'type'        => isset($error_body['type']) ? sanitize_key($error_body['type']) : '',
@@ -253,6 +324,29 @@ class ImgPro_CDN_API {
         do_action('imgpro_cdn_api_error', $error, $path);
 
         return $error;
+    }
+
+    /**
+     * Messages from an error's details, at most three
+     *
+     * img.pro lists the reasons per field, as a message or a list of them.
+     *
+     * @param mixed $details Error details.
+     * @return string[]
+     */
+    private static function detail_messages($details) {
+        if (!is_array($details)) {
+            return [];
+        }
+
+        $messages = [];
+        foreach ($details as $value) {
+            $first = is_array($value) ? reset($value) : $value;
+            if (is_string($first) && '' !== trim($first)) {
+                $messages[] = sanitize_text_field($first);
+            }
+        }
+        return array_slice($messages, 0, 3);
     }
 
     /**

@@ -21,8 +21,8 @@ Since 2.0 there is no Bandwidth Saver backend of its own. The old CDN worker (`u
 ## High-Level Intent
 
 - Each site owner creates their own img.pro App and pastes an API key with Read and Write permission.
-- The **plugin** uploads every file in the media library (full size and every intermediate size) from disk to that App, labelled with the site, and keeps a map of upload path to img.pro URL in a custom table.
-- On the frontend, the plugin swaps media library URLs for the img.pro URLs of synced files at render time. WordPress stays in charge of sizes and formats; img.pro serves each file as-is.
+- The **plugin** copies media library files (full size and every intermediate size) from disk to that App on demand: the first time a page shows a file, or when someone uses Copy to img.pro in the Media Library. Uploads are labelled with the site, and a custom table maps each upload path to its status and img.pro URL.
+- On the frontend, the plugin swaps media library URLs for the img.pro URLs of synced files at render time, and queues files it has not copied yet. WordPress stays in charge of sizes and formats; img.pro serves a re-encoded copy of each file at the same dimensions (HEIC as JPEG, metadata removed; animated PNGs stay on the server).
 - Plans, limits and billing live in img.pro (counted by stored images).
 
 ## Your Warm-Up Job (NO CODE CHANGES YET)
@@ -32,10 +32,11 @@ Since 2.0 there is no Bandwidth Saver backend of its own. The old CDN worker (`u
 **WordPress Plugin:**
 - `imgpro-cdn.php` and the classes under `includes/`, plus `admin/` and `uninstall.php`
 - `class-imgpro-cdn-api.php`: img.pro client (usage, write check, multipart upload, list, batch delete, error envelope)
-- `class-imgpro-cdn-files.php`: the `{prefix}imgpro_files` table and its statuses (pending, synced, failed, skipped, delete)
-- `class-imgpro-cdn-sync.php`: the WP-Cron and AJAX driven worker (deletions, backfill scan, adopt after reconnect, uploads), its lock, pauses and backoff
+- `class-imgpro-cdn-files.php`: the `{prefix}imgpro_files` table and its statuses (idle, pending, synced, failed, skipped, delete), queue priority, and per-attachment summaries
+- `class-imgpro-cdn-sync.php`: the WP-Cron and AJAX driven worker (deletions, backfill scan, adopt after reconnect, uploads with Media Library copies first), its lock, pauses and backoff
 - `class-imgpro-cdn-rewriter.php`: which WordPress hooks are filtered, which are deliberately not, and the origin fallback
-- `class-imgpro-cdn-admin.php` and `class-imgpro-cdn-admin-ajax.php`: connect, toggle, sync progress, disconnect and remove-all
+- `class-imgpro-cdn-admin.php` and `class-imgpro-cdn-admin-ajax.php`: connect, the serving setting, copy status, disconnect and remove-all
+- `class-imgpro-cdn-media.php`: the Media Library column, row and bulk actions, attachment details and edit screen block, and the copy itself
 
 **img.pro API:**
 - `POST /v1/images`, `GET /v1/images` with label filters, `DELETE /v1/images/batch`, `GET /v1/usage`
@@ -48,14 +49,17 @@ Since 2.0 there is no Bandwidth Saver backend of its own. The old CDN worker (`u
 Map the high-level flows:
 
 **Connecting a site:**
-- How the key is validated and stored, and how the first sync starts
+- How the key is validated and stored, and how the scan and matching start
 
 **A new upload in WordPress:**
-- How metadata changes queue files, and how the worker uploads them
+- How metadata changes record files, when they are queued, and how the worker uploads them
 
 **A pageview with images:**
 - What the plugin does to the HTML and attributes
-- What happens for files that are not synced yet, and when img.pro fails in the browser
+- How files not copied yet get queued, and what happens when img.pro fails in the browser
+
+**Copy to img.pro in the Media Library:**
+- How a copy is queued with priority and partly uploaded within the request
 
 **Edit, delete, disconnect, remove all, uninstall:**
 - What happens to rows in the table and to images on img.pro

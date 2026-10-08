@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
 /**
  * AJAX endpoints behind the settings page
  *
+ * The Media Library's copy button has its own (see ImgPro_CDN_Media).
+ *
  * @since 0.1.2
  */
 class ImgPro_CDN_Admin_Ajax {
@@ -58,7 +60,6 @@ class ImgPro_CDN_Admin_Ajax {
     public function register_hooks() {
         add_action('wp_ajax_imgpro_cdn_connect', [$this, 'ajax_connect']);
         add_action('wp_ajax_imgpro_cdn_disconnect', [$this, 'ajax_disconnect']);
-        add_action('wp_ajax_imgpro_cdn_toggle_enabled', [$this, 'ajax_toggle_enabled']);
         add_action('wp_ajax_imgpro_cdn_sync_status', [$this, 'ajax_sync_status']);
         add_action('wp_ajax_imgpro_cdn_sync_step', [$this, 'ajax_sync_step']);
         add_action('wp_ajax_imgpro_cdn_retry_failed', [$this, 'ajax_retry_failed']);
@@ -85,20 +86,38 @@ class ImgPro_CDN_Admin_Ajax {
 
         $usage = $api->get_usage();
         if (is_wp_error($usage)) {
-            wp_send_json_error(['message' => $this->describe_key_error($usage)]);
+            wp_send_json_error(['message' => $this->describe_key_error($usage, 'read')]);
         }
 
         $write = $api->check_write_access();
         if (is_wp_error($write)) {
-            wp_send_json_error(['message' => $this->describe_key_error($write)]);
+            wp_send_json_error(['message' => $this->describe_key_error($write, 'write')]);
         }
 
-        // A key replaced while images are being deleted carries on deleting
-        $removing = (bool) $this->settings->refresh()['removing'];
+        // A key replaced while images are being deleted carries on deleting,
+        // and a replaced key keeps the Serve images setting as it was saved;
+        // a first connection turns serving on
+        $previous      = $this->settings->refresh();
+        $removing      = (bool) $previous['removing'];
+        $was_connected = $this->settings->is_connected();
+
+        // A site whose label names another address is a copy of that site (a
+        // staging copy, say) or a site that moved. Connecting it afresh gives
+        // it its own label, so it never lists, adopts or deletes the other
+        // site's images, and drops the rows it was copied with, including
+        // deletions that name the other site's images. A moved site that
+        // wants its old copies back keeps its old label with the
+        // imgpro_cdn_site_label filter (the label then matches). Replacing
+        // the key of a connected site keeps everything.
+        $label = (string) $previous['site_label'];
+        if (!$was_connected && !$removing && '' !== $label && ImgPro_CDN_Settings::current_site_label() !== $label) {
+            $this->settings->update(['site_label' => '']);
+            ImgPro_CDN_Files::clear();
+        }
 
         $this->settings->update([
             'api_key'      => $api_key,
-            'enabled'      => !$removing,
+            'enabled'      => !$removing && (!$was_connected || (bool) $previous['enabled']),
             'pause_reason' => ImgPro_CDN_Settings::PAUSE_NONE,
             'pause_detail' => '',
         ]);
@@ -118,25 +137,37 @@ class ImgPro_CDN_Admin_Ajax {
      * Explain why a key was rejected
      *
      * @param WP_Error $error API error.
+     * @param string   $step  The check that failed: 'read' (usage) or 'write' (upload probe).
      * @return string
      */
-    private function describe_key_error($error) {
+    private function describe_key_error($error, $step) {
         $data   = (array) $error->get_error_data();
         $status = (int) ($data['status'] ?? 0);
         $code   = $error->get_error_code();
 
         if (401 === $status) {
-            return __('img.pro did not recognize this key. Check that you copied all of it and that it has not been revoked.', 'bandwidth-saver');
+            return __('img.pro did not recognize this key. Check that you copied all of it and that it has not been revoked. A key also stops working when the person who created it is no longer the App\'s owner or an admin. Keys created on test.img.pro only work there.', 'bandwidth-saver');
         }
         if ('forbidden' === $code) {
-            return __('This key cannot upload images. Create a key with Read and Write permission.', 'bandwidth-saver');
+            return 'read' === $step
+                ? __('This key cannot read the App\'s images. Create a key with Read and Write permission.', 'bandwidth-saver')
+                : __('This key cannot upload images. Create a key with Read and Write permission.', 'bandwidth-saver');
         }
-        if (in_array($code, ['app_suspended', 'app_blocked'], true)) {
-            return __('img.pro has paused this App. Check your App on img.pro.', 'bandwidth-saver');
+        if ('app_suspended' === $code) {
+            return __('This App is paused or unavailable on img.pro, and this key stops working while it is. Check the App\'s Overview on img.pro, or use a key with App storage only data access.', 'bandwidth-saver');
+        }
+        if ('app_blocked' === $code) {
+            return __('This App is unavailable right now. Write to support@img.pro.', 'bandwidth-saver');
+        }
+        if ('workspace_unavailable' === $code) {
+            return __('This App\'s images are being deleted on img.pro, so it takes no new ones. Use a key from another App.', 'bandwidth-saver');
         }
         if ('connection_error' === $code) {
             /* translators: %s: connection error message */
             return sprintf(__('Could not reach img.pro: %s', 'bandwidth-saver'), $error->get_error_message());
+        }
+        if (429 === $status || $status >= 500) {
+            return __('img.pro is busy right now. Try again in a minute.', 'bandwidth-saver');
         }
 
         return $error->get_error_message();
@@ -175,24 +206,6 @@ class ImgPro_CDN_Admin_Ajax {
     }
 
     /**
-     * Turn serving from img.pro on or off
-     *
-     * @return void
-     */
-    public function ajax_toggle_enabled() {
-        check_ajax_referer(ImgPro_CDN_Security::get_nonce_action('imgpro_cdn_toggle_enabled'), 'nonce');
-        ImgPro_CDN_Security::check_permission();
-
-        $enabled = isset($_POST['enabled']) && '1' === sanitize_text_field(wp_unslash($_POST['enabled']));
-        if (!$this->settings->is_connected() || $this->settings->get('removing')) {
-            wp_send_json_error(['message' => __('img.pro is not connected.', 'bandwidth-saver')]);
-        }
-
-        $this->settings->update(['enabled' => $enabled]);
-        wp_send_json_success(['enabled' => $enabled]);
-    }
-
-    /**
      * Current sync status
      *
      * @return void
@@ -206,8 +219,9 @@ class ImgPro_CDN_Admin_Ajax {
     /**
      * Run a short burst of sync work, then report status
      *
-     * The settings page calls this repeatedly while it is open, so large
-     * libraries sync quickly even on sites with little traffic.
+     * The settings page calls this repeatedly while there is work, so the
+     * scan and the copies pages asked for finish quickly even on sites
+     * with little traffic.
      *
      * @return void
      */
@@ -239,14 +253,17 @@ class ImgPro_CDN_Admin_Ajax {
         check_ajax_referer(ImgPro_CDN_Security::get_nonce_action('imgpro_cdn_retry_failed'), 'nonce');
         ImgPro_CDN_Security::check_permission();
 
-        ImgPro_CDN_Files::retry_failed();
+        if (ImgPro_CDN_Files::retry_failed((bool) $this->settings->get('remote')) > 0) {
+            ImgPro_CDN_Sync::wake_for_new_files();
+        }
         ImgPro_CDN_Sync::schedule_soon();
 
         wp_send_json_success($this->status_payload());
     }
 
     /**
-     * Resume after a quota or App pause
+     * Try again now: resume after a quota or App pause, or cut a back-off
+     * wait short
      *
      * @return void
      */
@@ -270,13 +287,14 @@ class ImgPro_CDN_Admin_Ajax {
             return ['connected' => false];
         }
 
-        $usage = ImgPro_CDN_Admin::get_usage($this->settings);
+        $usage  = ImgPro_CDN_Admin::get_usage($this->settings);
+        $status = $this->sync->get_status();
 
         return [
             'connected' => true,
-            'enabled'   => (bool) $this->settings->get('enabled'),
-            'status'    => $this->sync->get_status(),
-            'images'    => is_array($usage) ? ImgPro_CDN_Admin::format_image_counts(ImgPro_CDN_Admin::get_image_counts($usage)) : null,
+            'status'    => $status,
+            'labels'    => ImgPro_CDN_Admin::status_labels($status),
+            'images'    => is_array($usage) ? ImgPro_CDN_Admin::format_image_counts($usage) : null,
         ];
     }
 }

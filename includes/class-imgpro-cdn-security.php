@@ -55,20 +55,20 @@ class ImgPro_CDN_Security {
      * @var array
      */
     private static $nonce_actions = [
-        'imgpro_cdn_connect'        => 'connect',
-        'imgpro_cdn_disconnect'     => 'connect',
-        'imgpro_cdn_toggle_enabled' => 'toggle_enabled',
-        'imgpro_cdn_sync_status'    => 'sync',
-        'imgpro_cdn_sync_step'      => 'sync',
-        'imgpro_cdn_retry_failed'   => 'sync',
-        'imgpro_cdn_resume_sync'    => 'sync',
-        'imgpro_cdn_remove_all'     => 'remove_all',
+        'imgpro_cdn_connect'         => 'connect',
+        'imgpro_cdn_disconnect'      => 'connect',
+        'imgpro_cdn_sync_status'     => 'sync',
+        'imgpro_cdn_sync_step'       => 'sync',
+        'imgpro_cdn_retry_failed'    => 'sync',
+        'imgpro_cdn_resume_sync'     => 'sync',
+        'imgpro_cdn_remove_all'      => 'remove_all',
+        'imgpro_cdn_copy_attachment' => 'copy',
     ];
 
     /**
      * Get nonce action string for an AJAX action
      *
-     * @param string $ajax_action The AJAX action name (e.g., 'imgpro_cdn_toggle_enabled').
+     * @param string $ajax_action The AJAX action name (e.g., 'imgpro_cdn_sync_step').
      * @return string Full nonce action string.
      */
     public static function get_nonce_action($ajax_action) {
@@ -180,6 +180,21 @@ class ImgPro_CDN_Security {
     public static function current_user_can() {
         // Check custom capability first, fall back to manage_options
         return current_user_can(self::CAPABILITY) || current_user_can('manage_options');
+    }
+
+    /**
+     * Capability the settings page is registered with
+     *
+     * Matches current_user_can(): the plugin's own capability when the user
+     * has it, so a role granted only that capability can open the page its
+     * notices link to, and manage_options otherwise (a site whose roles
+     * were never granted it, such as a network site the plugin has not
+     * caught up with yet).
+     *
+     * @return string
+     */
+    public static function menu_capability() {
+        return current_user_can(self::CAPABILITY) ? self::CAPABILITY : 'manage_options';
     }
 
     /**

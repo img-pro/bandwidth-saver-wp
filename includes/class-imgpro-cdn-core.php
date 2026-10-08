@@ -29,6 +29,23 @@ class ImgPro_CDN_Core {
     const UPGRADE_NOTICE_OPTION = 'imgpro_cdn_v2_notice';
 
     /**
+     * When the plugin was last activated (per site, or network-wide as a
+     * site option)
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const ACTIVATED_OPTION = 'imgpro_cdn_activated';
+
+    /**
+     * The activation this site last caught up with
+     *
+     * @since 2.0.0
+     * @var string
+     */
+    const CAUGHT_UP_OPTION = 'imgpro_cdn_caught_up';
+
+    /**
      * Plugin instance
      *
      * @since 0.1.0
@@ -77,6 +94,14 @@ class ImgPro_CDN_Core {
     private $admin_ajax;
 
     /**
+     * Media Library integration instance
+     *
+     * @since 2.0.0
+     * @var ImgPro_CDN_Media
+     */
+    private $media;
+
+    /**
      * Get plugin instance
      *
      * @since 0.1.0
@@ -112,9 +137,14 @@ class ImgPro_CDN_Core {
 
         $this->sync = new ImgPro_CDN_Sync($this->settings);
         $this->sync->register_hooks();
+        $this->catch_up_after_activation();
 
         $this->rewriter = new ImgPro_CDN_Rewriter($this->settings);
         $this->rewriter->init();
+
+        // Also outside wp-admin, where front-end editors open the media modal
+        $this->media = new ImgPro_CDN_Media($this->settings, $this->sync);
+        $this->media->register_hooks();
 
         if (is_admin()) {
             $this->admin = new ImgPro_CDN_Admin($this->settings, $this->sync);
@@ -226,27 +256,53 @@ class ImgPro_CDN_Core {
     /**
      * Plugin activation
      *
+     * Only records the activation. Each site catches up the next time it
+     * loads the plugin (see catch_up_after_activation()), which also covers
+     * network activation, where this runs for one site only, and WP-CLI,
+     * where no user is signed in.
+     *
      * @since 0.1.0
+     * @param bool $network_wide Whether the plugin was activated for the network.
      * @return void
      */
-    public static function activate() {
-        if (!current_user_can('activate_plugins')) {
-            return;
+    public static function activate($network_wide = false) {
+        if ($network_wide && is_multisite()) {
+            update_site_option(self::ACTIVATED_OPTION, time());
+        } else {
+            // Read on every request by catch_up_after_activation(), so autoload it
+            update_option(self::ACTIVATED_OPTION, time(), true);
         }
-
-        // SECURITY: Grant custom capability to administrators
-        ImgPro_CDN_Security::grant_capability_to_admins();
-
-        ImgPro_CDN_Files::install();
-
-        // Catch up on uploads and deletions made while the plugin was inactive
-        $sync = new ImgPro_CDN_Sync(new ImgPro_CDN_Settings());
-        $sync->restart_scan();
 
         /**
          * Fires after ImgPro CDN activation
          */
         do_action('imgpro_cdn_activated');
+    }
+
+    /**
+     * Catch up on what changed while the plugin was inactive
+     *
+     * Runs once per site after each activation: grants the capability,
+     * creates the table, and rescans the library, since uploads and
+     * deletions made meanwhile were not tracked.
+     *
+     * @since 2.0.0
+     * @return void
+     */
+    private function catch_up_after_activation() {
+        $activated = (int) get_option(self::ACTIVATED_OPTION, 0);
+        if (is_multisite()) {
+            $activated = max($activated, (int) get_site_option(self::ACTIVATED_OPTION, 0));
+        }
+        if (!$activated || (int) get_option(self::CAUGHT_UP_OPTION, 0) >= $activated) {
+            return;
+        }
+        update_option(self::CAUGHT_UP_OPTION, $activated, true);
+
+        // SECURITY: Grant custom capability to administrators
+        ImgPro_CDN_Security::grant_capability_to_admins();
+        ImgPro_CDN_Files::install();
+        $this->sync->restart_scan();
     }
 
     /**
@@ -259,12 +315,12 @@ class ImgPro_CDN_Core {
      * @return void
      */
     public static function deactivate() {
-        if (!current_user_can('activate_plugins')) {
-            return;
-        }
-
+        // On network deactivation this runs for one site; other sites'
+        // events find no callback and are cleared by the next activation
         ImgPro_CDN_Sync::unschedule();
-        delete_option(ImgPro_CDN_Sync::LOCK_OPTION);
+        // The worker lock stays: a run still working releases its own, and
+        // one that died expires (see ImgPro_CDN_Sync::LOCK_TTL). Deleting it
+        // would let a run after a quick reactivation work alongside it.
 
         /**
          * Fires after ImgPro CDN deactivation
